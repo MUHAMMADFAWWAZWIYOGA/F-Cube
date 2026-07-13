@@ -160,3 +160,18 @@ Aplikasi ini dapat disebarkan secara gratis di Vercel:
 2. Buka [Vercel Dashboard](https://vercel.com/dashboard) dan import repositori GitHub tersebut.
 3. Vercel akan mendeteksi framework Vite secara otomatis. Klik **Deploy**.
 4. Project Anda akan live dalam beberapa detik dan siap diinstal sebagai aplikasi PWA!
+
+---
+
+## 6. Local Security & Data Persistence
+
+### 6.1. Seeded-Stream Encryption
+Seluruh record pada `LocalStorage` dienkripsi secara sinkron menggunakan cipher aliran XOR berbasis benih (seeded stream cipher). Kunci byte-stream dibangun secara deterministik dari hash 32-bit PIN akses pengguna yang diproses melalui generator pseudo-random `Mulberry32`. 
+- **Integrity Validation:** Setiap string terenkripsi dibubuhi prefix header tanda tangan `FCUBE::TERMINAL::SECURED::OK` sebelum dienkripsi. Jika PIN salah dimasukkan pada lockscreen, hasil dekripsi tidak akan diawali dengan header ini, memberi tanda pada terminal bahwa akses ditolak dan mencegah data rusak (corrupted data).
+- **Session Lifespan:** Kunci PIN didekripsi hanya di memori state React. Menekan ikon **Gembok (Lock)** di bar atas atau menutup aplikasi akan segera menghapus variabel PIN dari memori, sehingga data kembali terenkripsi penuh.
+
+### 6.2. Proteksi Kerusakan & Kehilangan Data (Anti-Pruning)
+Untuk memastikan data tidak hilang saat browser melakukan pembersihan memori otomatis (misalnya ketika penyimpanan disk penuh atau selama proses update PWA):
+1. **Persistent Storage API:** Meminta otorisasi persistence menggunakan `navigator.storage.persist()` saat inisialisasi aplikasi. Begitu disetujui oleh browser, status penyimpanan PWA dialihkan menjadi "persistent", melarang browser melakukan penghapusan data sepihak.
+2. **JSON Database Backups:** Panel kontrol pada drawer samping memungkinkan pengguna mengekspor seluruh basis data terenkripsi ke file `.json` lokal, serta melakukan restore kapan saja dengan mengunggah kembali file tersebut dan memasukkan PIN asli mereka.
+

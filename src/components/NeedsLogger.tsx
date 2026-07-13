@@ -15,8 +15,12 @@ export interface NeedItem {
   updatedAt: string;
 }
 
-export const NeedsLogger: React.FC = () => {
-  const [items, setItems] = useLocalStorage<NeedItem[]>('my-monitor-needs', []);
+interface NeedsLoggerProps {
+  pin: string;
+}
+
+export const NeedsLogger: React.FC<NeedsLoggerProps> = ({ pin }) => {
+  const [items, setItems] = useLocalStorage<NeedItem[]>('my-monitor-needs', [], pin);
 
   // Form states
   const [showAddForm, setShowAddForm] = useState(false);

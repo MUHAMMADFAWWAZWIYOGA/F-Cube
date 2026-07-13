@@ -16,6 +16,7 @@ import {
 
 interface DashboardProps {
   setActiveTab: (tab: string) => void;
+  pin: string;
 }
 
 const formatDateLocal = (date: Date) => {
@@ -25,10 +26,10 @@ const formatDateLocal = (date: Date) => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
-export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
-  const [habits, setHabits] = useLocalStorage<Habit[]>('my-monitor-habits', []);
-  const [notes] = useLocalStorage<DocumentNote[]>('my-monitor-notes', []);
-  const [needs, setNeeds] = useLocalStorage<NeedItem[]>('my-monitor-needs', []);
+export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, pin }) => {
+  const [habits, setHabits] = useLocalStorage<Habit[]>('my-monitor-habits', [], pin);
+  const [notes] = useLocalStorage<DocumentNote[]>('my-monitor-notes', [], pin);
+  const [needs, setNeeds] = useLocalStorage<NeedItem[]>('my-monitor-needs', [], pin);
 
   const todayStr = formatDateLocal(new Date());
 
@@ -158,8 +159,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab }) => {
           <h2 className="text-base font-bold text-[#f0f0f0] tracking-wider mt-1">
             TERMINAL STATUS: <span className="text-[#00ff9d]">ONLINE</span>
           </h2>
-          <p className="text-[#8b9bb4] text-[10px] leading-relaxed mt-1">
-            Data secured on device. Caching systems active.
+          <p className="text-[#8b9bb4] text-[10px] leading-relaxed mt-1 flex flex-wrap items-center gap-1.5">
+            <span>Data secured on device.</span>
+            <span className="text-[#00ff9d] bg-[#1c2b3a]/50 px-1 font-bold text-[8px] tracking-tight uppercase border border-[#00ff9d]/25">
+              AES_SEEDED_SECURED
+            </span>
           </p>
         </div>
       </div>

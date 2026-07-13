@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Search, Plus, Trash2, Tag, BookOpen, Edit, Eye, FileText, ChevronRight, ArrowLeft } from 'lucide-react';
 
@@ -21,7 +21,16 @@ const parseInlineMarkdown = (text: string): string => {
   escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>');
   escaped = escaped.replace(/\*(.*?)\*/g, '<em class="italic text-[#8b9bb4]">$1</em>');
   escaped = escaped.replace(/`(.*?)`/g, '<code class="bg-[#1c2b3a] px-1 py-0.5 rounded-none font-mono text-[11px] text-[#ff9f30]">$1</code>');
-  escaped = escaped.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#00ff9d] hover:underline font-medium">$1</a>');
+  escaped = escaped.replace(/\[(.*?)\]\((.*?)\)/g, (_match, label: string, href: string) => {
+    const trimmedHref = href.trim();
+    const isSafeUrl = /^(https?:\/\/|mailto:)/i.test(trimmedHref);
+    if (!isSafeUrl) {
+      return label;
+    }
+
+    const safeHref = trimmedHref.replace(/"/g, '&quot;');
+    return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer" class="text-[#00ff9d] hover:underline font-medium">${label}</a>`;
+  });
 
   return escaped;
 };
@@ -85,8 +94,19 @@ const parseMarkdownToHtml = (md: string): string => {
   return htmlLines.join('\n');
 };
 
-export const DocumentManager: React.FC = () => {
-  const [notes, setNotes] = useLocalStorage<DocumentNote[]>('my-monitor-notes', []);
+const parseTagInput = (tags: string): string[] => {
+  return tags
+    .split(',')
+    .map(tag => tag.trim())
+    .filter(tag => tag.length > 0);
+};
+
+interface DocumentManagerProps {
+  pin: string;
+}
+
+export const DocumentManager: React.FC<DocumentManagerProps> = ({ pin }) => {
+  const [notes, setNotes] = useLocalStorage<DocumentNote[]>('my-monitor-notes', [], pin);
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
   
   // Search & Filters
@@ -98,6 +118,7 @@ export const DocumentManager: React.FC = () => {
   const [editContent, setEditContent] = useState('');
   const [editTags, setEditTags] = useState('');
   const [editorMode, setEditorMode] = useState<'edit' | 'preview'>('edit');
+  const [saveState, setSaveState] = useState<'saved' | 'pending'>('saved');
 
   const activeNote = useMemo(() => {
     return notes.find(n => n.id === activeNoteId) || null;
@@ -108,7 +129,32 @@ export const DocumentManager: React.FC = () => {
     setEditTitle(note.title);
     setEditContent(note.content);
     setEditTags(note.tags.join(', '));
+    setSaveState('saved');
   };
+
+  useEffect(() => {
+    if (!activeNoteId) return;
+
+    setSaveState('pending');
+    const timeout = window.setTimeout(() => {
+      const parsedTags = parseTagInput(editTags);
+      setNotes(currentNotes => currentNotes.map(note => {
+        if (note.id === activeNoteId) {
+          return {
+            ...note,
+            title: editTitle.trim() || 'UNTITLED NOTE',
+            content: editContent,
+            tags: parsedTags,
+            updatedAt: new Date().toISOString()
+          };
+        }
+        return note;
+      }));
+      setSaveState('saved');
+    }, 600);
+
+    return () => window.clearTimeout(timeout);
+  }, [activeNoteId, editTitle, editContent, editTags, setNotes]);
 
   const allTags = useMemo(() => {
     const tagsSet = new Set<string>();
@@ -148,13 +194,8 @@ export const DocumentManager: React.FC = () => {
 
   const handleSaveNote = () => {
     if (!activeNoteId) return;
-
-    const parsedTags = editTags
-      .split(',')
-      .map(tag => tag.trim())
-      .filter(tag => tag.length > 0);
-
-    const updatedNotes = notes.map(note => {
+    const parsedTags = parseTagInput(editTags);
+    setNotes(currentNotes => currentNotes.map(note => {
       if (note.id === activeNoteId) {
         return {
           ...note,
@@ -165,9 +206,8 @@ export const DocumentManager: React.FC = () => {
         };
       }
       return note;
-    });
-
-    setNotes(updatedNotes);
+    }));
+    setSaveState('saved');
   };
 
   const handleDeleteNote = (id: string) => {
@@ -226,6 +266,13 @@ export const DocumentManager: React.FC = () => {
             </div>
 
             <div className="flex items-center space-x-1.5">
+              <span className={`hidden sm:inline text-[8px] font-bold uppercase tracking-wider px-1.5 py-1 border ${
+                saveState === 'saved'
+                  ? 'text-[#00ff9d] border-[#00ff9d]/25 bg-[#00ff9d]/10'
+                  : 'text-[#ff9f30] border-[#ff9f30]/25 bg-[#ff9f30]/10'
+              }`}>
+                {saveState === 'saved' ? 'SAVED' : 'SAVING'}
+              </span>
               <button
                 onClick={() => handleDeleteNote(activeNote.id)}
                 className="text-[#8b9bb4] hover:text-rose-500 p-1.5 hover:bg-[#1c2b3a]"
@@ -249,7 +296,6 @@ export const DocumentManager: React.FC = () => {
               value={editTitle}
               onChange={(e) => {
                 setEditTitle(e.target.value.toUpperCase());
-                handleSaveNote();
               }}
               onBlur={handleSaveNote}
               placeholder="DOCUMENT TITLE"
@@ -262,7 +308,6 @@ export const DocumentManager: React.FC = () => {
                 value={editTags}
                 onChange={(e) => {
                   setEditTags(e.target.value);
-                  handleSaveNote();
                 }}
                 onBlur={handleSaveNote}
                 placeholder="tags, separated, by, commas"
@@ -278,7 +323,6 @@ export const DocumentManager: React.FC = () => {
                 value={editContent}
                 onChange={(e) => {
                   setEditContent(e.target.value);
-                  handleSaveNote();
                 }}
                 onBlur={handleSaveNote}
                 placeholder="Write markdown details here... Use # for title, ## for subtitles, - for list items, **bold**, *italic*, `code` and [text](link)"

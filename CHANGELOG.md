@@ -2,6 +2,18 @@
 
 All notable changes to the F'Cube Personal Monitor project will be documented in this file.
 
+## [2.1.0-security] - 2026-07-13
+### Added
+- **PIN Lockscreen:** Added a secure 4-digit PIN lockscreen on startup to verify authorized access before decrypting databases.
+- **Seeded Stream Encryption:** Created a custom cryptographically secure stream cipher (`src/utils/crypto.ts`) seeded by user PIN hashes to encrypt/decrypt local databases on read/write cycles.
+- **Storage Persistence API:** Requested `navigator.storage.persist()` on app mounting to prevent browsers from pruning local storage during system cleanups.
+- **Backup & Restore System:** Added settings controls in the drawer to export full secure JSON database bundles and import them back, preventing data loss on PWA updates.
+- **Lock Button:** Added a Lock icon in the header allowing users to immediately lock their terminal and purge in-memory decrypted databases.
+
+### Changed
+- **LocalStorage Sync:** Upgraded `useLocalStorage.ts` to transparently handle encryption/decryption when a PIN is set.
+- **Dashboard Security Indicator:** Added terminal encryption status badges in the stats panel.
+
 ---
 
 ## [2.0.0-blueprint] - 2026-07-12

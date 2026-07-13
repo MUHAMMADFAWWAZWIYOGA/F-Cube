@@ -1,59 +1,105 @@
 import { useState, useEffect, useCallback } from 'react';
+import { encrypt, decrypt } from '../utils/crypto';
 
-export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T | ((val: T) => T)) => void] {
-  const readValue = useCallback((): T => {
-    if (typeof window === 'undefined') {
-      return initialValue;
+export function useLocalStorage<T>(key: string, initialValue: T, pin?: string): [T, (value: T | ((val: T) => T)) => void, boolean] {
+  const [storedValue, setStoredValue] = useState<T>(initialValue);
+  const [isReady, setIsReady] = useState<boolean>(!pin);
+
+  // Load from local storage asynchronously
+  useEffect(() => {
+    let isMounted = true;
+    
+    async function loadValue() {
+      if (typeof window === 'undefined') return;
+      
+      try {
+        const item = window.localStorage.getItem(key);
+        if (!item) {
+          if (isMounted) {
+            setStoredValue(initialValue);
+            setIsReady(true);
+          }
+          return;
+        }
+
+        if (pin) {
+          const { success, data } = await decrypt(item, pin);
+          if (isMounted) {
+            if (success) {
+              setStoredValue(JSON.parse(data));
+            } else {
+              setStoredValue(initialValue);
+            }
+            setIsReady(true);
+          }
+        } else {
+          if (isMounted) {
+            setStoredValue(JSON.parse(item));
+            setIsReady(true);
+          }
+        }
+      } catch (error) {
+        if (isMounted) {
+          setStoredValue(initialValue);
+          setIsReady(true);
+        }
+      }
     }
-
-    try {
-      const item = window.localStorage.getItem(key);
-      return item ? (JSON.parse(item) as T) : initialValue;
-    } catch (error) {
-      console.warn(`Error reading localStorage key "${key}":`, error);
-      return initialValue;
-    }
-  }, [key, initialValue]);
-
-  const [storedValue, setStoredValue] = useState<T>(readValue);
+    
+    loadValue();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [key, pin]); // Note: initialValue omitted to avoid constant re-fetching if object changes
 
   const setValue = useCallback((value: T | ((val: T) => T)) => {
-    try {
-      const valueToStore = value instanceof Function ? value(storedValue) : value;
-      setStoredValue(valueToStore);
+    setStoredValue((previousValue) => {
+      const valueToStore = value instanceof Function ? value(previousValue) : value;
 
       if (typeof window !== 'undefined') {
-        window.localStorage.setItem(key, JSON.stringify(valueToStore));
-        window.dispatchEvent(new Event('local-storage-update'));
+        void (async () => {
+          try {
+            const serialized = JSON.stringify(valueToStore);
+            const toStore = pin ? await encrypt(serialized, pin) : serialized;
+            window.localStorage.setItem(key, toStore);
+            window.dispatchEvent(new Event('local-storage-update'));
+          } catch (error) {
+            console.warn(`Error setting localStorage key "${key}":`, error);
+          }
+        })();
       }
-    } catch (error) {
-      console.warn(`Error setting localStorage key "${key}":`, error);
-    }
-  }, [key, storedValue]);
 
-  useEffect(() => {
-    setStoredValue(readValue());
-  }, [readValue]);
+      return valueToStore;
+    });
+  }, [key, pin]);
 
+  // Handle cross-tab sync
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
+    let isMounted = true;
+    const handleStorageChange = async (e: StorageEvent) => {
       if (e.key === key) {
-        setStoredValue(readValue());
+        if (!e.newValue) {
+          if (isMounted) setStoredValue(initialValue);
+          return;
+        }
+        if (pin) {
+          const { success, data } = await decrypt(e.newValue, pin);
+          if (isMounted && success) {
+            setStoredValue(JSON.parse(data));
+          }
+        } else {
+          if (isMounted) setStoredValue(JSON.parse(e.newValue));
+        }
       }
-    };
-
-    const handleLocalUpdate = () => {
-      setStoredValue(readValue());
     };
 
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('local-storage-update', handleLocalUpdate);
-
     return () => {
+      isMounted = false;
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('local-storage-update', handleLocalUpdate);
     };
-  }, [key, readValue]);
+  }, [key, pin]);
 
-  return [storedValue, setValue];
+  return [storedValue, setValue, isReady];
 }

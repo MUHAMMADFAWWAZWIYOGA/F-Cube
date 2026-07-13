@@ -20,9 +20,13 @@ const formatDateLocal = (date: Date) => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
-export const HabitTracker: React.FC = () => {
-  const [habits, setHabits] = useLocalStorage<Habit[]>('my-monitor-habits', []);
-  const [reminders, setReminders] = useLocalStorage<ReminderItem[]>('my-monitor-reminders', []);
+interface HabitTrackerProps {
+  pin: string;
+}
+
+export const HabitTracker: React.FC<HabitTrackerProps> = ({ pin }) => {
+  const [habits, setHabits] = useLocalStorage<Habit[]>('my-monitor-habits', [], pin);
+  const [reminders, setReminders] = useLocalStorage<ReminderItem[]>('my-monitor-reminders', [], pin);
 
   // Creation states
   const [name, setName] = useState('');
