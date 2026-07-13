@@ -8,14 +8,14 @@ interface BottomNavProps {
 
 export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab }) => {
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'habits', label: 'Habits', icon: Flame },
-    { id: 'notes', label: 'Knowledge', icon: BookOpen },
-    { id: 'needs', label: 'Needs', icon: ClipboardList },
+    { id: 'dashboard', label: 'DASHBOARD', icon: LayoutDashboard },
+    { id: 'habits', label: 'HABITS', icon: Flame },
+    { id: 'notes', label: 'NOTES', icon: BookOpen },
+    { id: 'needs', label: 'NEEDS', icon: ClipboardList },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-850 text-white z-50 md:hidden flex justify-around items-center h-16 pb-safe">
+    <nav className="absolute bottom-0 left-0 right-0 bg-[#0b1623] border-t border-[#1c2b3a] text-[#f0f0f0] z-40 flex justify-around items-center h-16">
       {menuItems.map((item) => {
         const Icon = item.icon;
         const isActive = activeTab === item.id;
@@ -23,14 +23,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-[10px] font-semibold transition-all duration-150 relative ${
-              isActive ? 'text-emerald-400' : 'text-slate-400'
+            className={`flex flex-col items-center justify-center flex-1 h-full py-1 text-[8px] font-bold tracking-wider transition-all duration-150 relative ${
+              isActive ? 'text-[#ff9f30]' : 'text-[#8b9bb4] hover:text-[#f0f0f0]'
             }`}
           >
             {isActive && (
-              <span className="absolute top-0 w-10 h-0.5 bg-emerald-400 rounded-full animate-pulse" />
+              <span className="absolute top-0 w-10 h-0.5 bg-[#ff9f30]" />
             )}
-            <Icon className={`w-5.5 h-5.5 mb-1 transition-transform ${isActive ? 'scale-110 text-emerald-400' : 'text-slate-400'}`} />
+            <Icon className={`w-5 h-5 mb-0.5 ${isActive ? 'text-[#ff9f30]' : 'text-[#8b9bb4]'}`} />
             <span>{item.label}</span>
           </button>
         );

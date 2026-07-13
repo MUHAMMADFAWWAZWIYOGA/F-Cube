@@ -1,65 +1,73 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --color-brand-50: #f8fafc;
-  --color-brand-100: #f1f5f9;
-  --color-brand-200: #e2e8f0;
-  --color-brand-300: #cbd5e1;
-  --color-brand-400: #94a3b8;
-  --color-brand-500: #64748b;
-  --color-brand-600: #475569;
-  --color-brand-700: #334155;
-  --color-brand-800: #1e293b;
-  --color-brand-900: #0f172a;
-  --color-brand-950: #020617;
+  --color-primary: #0b1623;
+  --color-secondary: #f0f0f0;
+  --color-accent: #ff9f30;
+  --color-grid: #1c2b3a;
+  --color-dim: #8b9bb4;
+  --color-success: #00ff9d;
+  --color-warning: #ff9f30;
 
-  --color-emerald-50: #f0fdf4;
-  --color-emerald-100: #dcfce7;
-  --color-emerald-500: #10b981;
-  --color-emerald-600: #059669;
-  --color-emerald-700: #047857;
+  --font-sans: 'JetBrains Mono', monospace;
+  --font-mono: 'JetBrains Mono', monospace;
 
-  --color-rose-50: #fff5f5;
-  --color-rose-100: #ffe3e3;
-  --color-rose-500: #f43f5e;
-  --color-rose-600: #e11d48;
-
-  --font-sans: 'Outfit', 'Inter', 'system-ui', 'sans-serif';
+  /* Force sharp 0px corners across all components */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-full: 0px;
 }
 
 @layer base {
   body {
-    background-color: #ffffff;
-    background-image: radial-gradient(#e2e8f0 1.2px, transparent 1.2px);
+    background-color: #0b1623;
+    /* Drafting grid background lines */
+    background-image: 
+      linear-gradient(to right, #1c2b3a 1px, transparent 1px),
+      linear-gradient(to bottom, #1c2b3a 1px, transparent 1px);
     background-size: 20px 20px;
-    @apply text-slate-800 font-sans antialiased selection:bg-emerald-100 selection:text-emerald-950;
+    @apply text-[#f0f0f0] font-sans antialiased selection:bg-accent/30 selection:text-white;
   }
 }
 
-/* Custom scrollbars */
+/* Custom scrollbars - Industrial wireframe style */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
-  @apply bg-transparent;
+  background: #0b1623;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+  background: #1c2b3a;
+  border: 1px solid #ff9f30;
 }
 
 /* Custom card & design utilities */
 .glass-panel {
-  @apply bg-white border border-slate-100 shadow-xs rounded-2xl;
+  background: #0b1623;
+  border: 1px solid #1c2b3a;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
 }
 
 .app-card {
-  @apply bg-white border border-slate-200/60 shadow-xs rounded-xl hover:border-slate-300 transition-all duration-200;
+  background: #0b1623;
+  border: 1px solid #1c2b3a;
+  @apply transition-colors duration-150;
+}
+
+.app-card:hover {
+  border-color: #ff9f30;
 }
 
 .gradient-text {
-  @apply bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700;
+  color: #f0f0f0;
 }
 
 /* Slide in drawer keyframes */
@@ -73,5 +81,12 @@
 }
 
 .animate-slide-in-right {
-  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideInRight 0.2s ease-out forwards;
+}
+
+/* Custom mock hand-held phone device style */
+.mobile-device-shell {
+  background: #0b1623;
+  border: 4px double #1c2b3a;
+  box-shadow: 0 0 40px rgba(0, 255, 157, 0.05);
 }

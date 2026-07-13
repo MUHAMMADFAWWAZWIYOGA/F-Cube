@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
-import { Sidebar } from './components/Sidebar';
 import { BottomNav } from './components/BottomNav';
 import { Dashboard } from './components/Dashboard';
 import { HabitTracker } from './components/HabitTracker';
 import { DocumentManager } from './components/DocumentManager';
 import { NeedsLogger } from './components/NeedsLogger';
 import type { NeedItem } from './components/NeedsLogger';
-import { Bell, X, Info, AlertCircle, CheckCircle2, Clock } from 'lucide-react';
+import { Bell, X } from 'lucide-react';
 
 export interface NotificationItem {
   id: string;
@@ -25,7 +24,7 @@ export interface ReminderItem {
   days: string[]; // e.g. ["Mon", "Tue", "Wed"]
   isActive: boolean;
   habitId?: string;
-  lastTriggeredDate?: string; // YYYY-MM-DD to prevent double triggers in the same minute
+  lastTriggeredDate?: string;
 }
 
 function App() {
@@ -33,8 +32,8 @@ function App() {
   const [notifications, setNotifications] = useLocalStorage<NotificationItem[]>('my-monitor-notifications', [
     {
       id: 'init-notification',
-      title: 'System Synced',
-      message: "F'Cube Monitor is initialized. All database items are secured on-device.",
+      title: 'SYS.READY',
+      message: "F'Cube Monitor pocket terminal active. On-device local database secured.",
       time: new Date().toISOString(),
       read: false,
       type: 'success'
@@ -79,7 +78,6 @@ function App() {
       reminders.forEach((rem, idx) => {
         if (!rem.isActive) return;
         
-        // Match current time and check if it runs on this weekday
         const matchesTime = rem.time === currentHHMM;
         const matchesDay = rem.days.length === 0 || rem.days.includes(todayDay);
         const alreadyTriggered = rem.lastTriggeredDate === todayDateStr;
@@ -94,18 +92,18 @@ function App() {
           // Trigger local in-app notification
           const newNotif: NotificationItem = {
             id: crypto.randomUUID(),
-            title: `Reminder: ${rem.title}`,
-            message: `It is ${rem.time}. Time to complete your tasks!`,
+            title: `ALARM: ${rem.title.toUpperCase()}`,
+            message: `Time trigger reached: ${rem.time}. Execute routine.`,
             time: new Date().toISOString(),
             read: false,
             type: 'info'
           };
           setNotifications(prev => [newNotif, ...prev]);
 
-          // Trigger OS notification if allowed
+          // Trigger OS notification
           if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification(`F'Cube Monitor - ${rem.title}`, {
-              body: `Scheduled reminder at ${rem.time}`,
+            new Notification(`F'Cube Alert - ${rem.title}`, {
+              body: `Scheduled alarm at ${rem.time}`,
               icon: '/favicon.ico'
             });
           }
@@ -117,12 +115,12 @@ function App() {
             const gain = context.createGain();
             osc.connect(gain);
             gain.connect(context.destination);
-            osc.frequency.setValueAtTime(880, context.currentTime); // Pitch A5
-            gain.gain.setValueAtTime(0.05, context.currentTime);
+            osc.frequency.setValueAtTime(1000, context.currentTime); // 1000Hz tone
+            gain.gain.setValueAtTime(0.04, context.currentTime);
             osc.start();
-            osc.stop(context.currentTime + 0.15);
+            osc.stop(context.currentTime + 0.12);
           } catch (e) {
-            console.warn('Audio feedback failed:', e);
+            console.warn('Audio synthesis alert failed:', e);
           }
         }
       });
@@ -132,24 +130,21 @@ function App() {
       }
     };
 
-    // Run checker every 15 seconds
     const checkerInterval = setInterval(checkReminders, 15000);
     return () => clearInterval(checkerInterval);
   }, [reminders, setReminders, setNotifications]);
 
   // Alert builder (aggregates notifications on dashboard item statuses)
   useEffect(() => {
-    // Generate notification if high priority needs items are pending
     const highPriorityNeeds = needs.filter(item => item.priority === 'high' && item.status === 'needed');
     if (highPriorityNeeds.length > 0) {
       const needAlertId = `needs-alert-${highPriorityNeeds.length}`;
-      // Check if notification already exists
       const exists = notifications.some(n => n.id === needAlertId);
       if (!exists) {
         const newNotif: NotificationItem = {
           id: needAlertId,
-          title: 'High Priority Resource Pending',
-          message: `You have ${highPriorityNeeds.length} high priority item(s) pending in your Needs Logger.`,
+          title: 'WARN: UNACQUIRED RESOURCE',
+          message: `Pending: ${highPriorityNeeds.length} high priority inventory item(s).`,
           time: new Date().toISOString(),
           read: false,
           type: 'alert'
@@ -185,26 +180,23 @@ function App() {
   };
 
   return (
-    <div className="flex bg-transparent min-h-screen font-sans">
-      {/* Desktop Navigation Sidebar */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-
-      {/* Main Body */}
-      <div className="flex-1 flex flex-col min-h-screen overflow-hidden">
+    <div className="min-h-screen w-full flex items-center justify-center bg-transparent py-0 md:py-8">
+      {/* Handheld Blueprint Terminal Container */}
+      <div className="w-full max-w-md min-h-screen md:min-h-[820px] md:h-[820px] bg-[#0b1623] text-[#f0f0f0] flex flex-col relative overflow-hidden md:border-2 md:border-[#1c2b3a] md:shadow-2xl">
+        
         {/* Top Header Bar */}
-        <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-6 py-4 flex items-center justify-between shrink-0">
-          <div className="flex items-center space-x-3">
-            <span className="text-slate-900 font-extrabold text-sm md:text-base tracking-tight select-none">
-              Workspace Monitor
+        <header className="bg-[#0b1623] border-b border-[#1c2b3a] px-5 py-4 flex items-center justify-between shrink-0">
+          <div className="flex items-center space-x-2">
+            <span className="text-[#f0f0f0] font-bold text-[10px] tracking-wider select-none">
+              SYS.MONITOR // ALPHA
             </span>
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="w-1.5 h-1.5 bg-[#00ff9d] animate-pulse" />
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3.5">
             {/* Clock Widget */}
-            <div className="flex items-center space-x-1.5 text-xs text-slate-500 font-bold bg-slate-100/80 px-3 py-1.5 rounded-full">
-              <Clock className="w-3.5 h-3.5 text-slate-400" />
-              <span>{timeStr || 'Loading...'}</span>
+            <div className="text-[9px] text-[#8b9bb4] font-bold bg-[#1c2b3a] px-2 py-0.5 rounded-none">
+              {timeStr || 'SYS.CLOCK'}
             </div>
 
             {/* Notification Bell */}
@@ -213,106 +205,100 @@ function App() {
                 setShowDrawer(true);
                 handleMarkAllRead();
               }}
-              className="p-2 text-slate-500 hover:text-slate-800 rounded-xl hover:bg-slate-100 transition-colors relative"
+              className="p-1 text-[#8b9bb4] hover:text-[#ff9f30] transition-colors relative"
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-4.5 h-4.5" />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1.5 w-2.5 h-2.5 bg-rose-500 rounded-full ring-2 ring-white animate-bounce" />
+                <span className="absolute top-0 right-0 w-2 h-2 bg-[#ff9f30]" />
               )}
             </button>
           </div>
         </header>
 
-        {/* Content Box */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6">
+        {/* Content View Workspace */}
+        <main className="flex-1 overflow-y-auto p-4 pb-20">
           {renderActiveTab()}
         </main>
-      </div>
 
-      {/* Mobile Nav Bar */}
-      <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+        {/* Mobile bottom nav bar */}
+        <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* Notification Slide Drawer */}
-      {showDrawer && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
-          {/* Overlay backdrop */}
-          <div 
-            onClick={() => setShowDrawer(false)}
-            className="absolute inset-0 bg-slate-950/20 backdrop-blur-xs transition-opacity duration-300" 
-          />
+        {/* Notification Drawer (Slide-over) */}
+        {showDrawer && (
+          <div className="absolute inset-0 z-50 overflow-hidden">
+            <div 
+              onClick={() => setShowDrawer(false)}
+              className="absolute inset-0 bg-[#0b1623]/60 backdrop-blur-xs transition-opacity duration-300" 
+            />
 
-          {/* Sliding container */}
-          <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-white border-l border-slate-200 shadow-2xl flex flex-col animate-slide-in-right">
-            {/* Drawer Header */}
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="font-extrabold text-slate-900 text-sm">Notifications & Logs</h3>
-                <p className="text-[10px] text-slate-400">System alerts and alerts</p>
-              </div>
-              <button 
-                onClick={() => setShowDrawer(false)}
-                className="text-slate-400 hover:text-slate-700 p-1.5 hover:bg-slate-50 rounded-lg transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Drawer Body Scroll */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3.5">
-              {notifications.length === 0 ? (
-                <div className="text-center py-12 text-slate-400">
-                  <Bell className="w-8 h-8 mx-auto mb-2 text-slate-200" />
-                  <p className="text-xs">No notifications recorded.</p>
+            <div className="absolute right-0 top-0 bottom-0 w-80 bg-[#0b1623] border-l border-[#1c2b3a] flex flex-col animate-slide-in-right">
+              {/* Header */}
+              <div className="p-4 border-b border-[#1c2b3a] flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-xs uppercase tracking-wider text-[#f0f0f0]">LOGS & NOTIFICATIONS</h3>
+                  <p className="text-[9px] text-[#8b9bb4]">ON-DEVICE CONSOLE</p>
                 </div>
-              ) : (
-                notifications.map((notif) => {
-                  const typeColors = {
-                    info: 'bg-blue-50 border-blue-100 text-blue-800',
-                    alert: 'bg-rose-50 border-rose-100 text-rose-800',
-                    success: 'bg-emerald-50 border-emerald-100 text-emerald-800'
-                  };
-
-                  const typeIcons = {
-                    info: Info,
-                    alert: AlertCircle,
-                    success: CheckCircle2
-                  };
-
-                  const Icon = typeIcons[notif.type];
-
-                  return (
-                    <div 
-                      key={notif.id} 
-                      className={`p-3.5 rounded-xl border flex items-start space-x-3 transition-shadow hover:shadow-xs ${typeColors[notif.type]}`}
-                    >
-                      <Icon className="w-4.5 h-4.5 shrink-0 mt-0.5" />
-                      <div className="space-y-1 min-w-0 flex-1">
-                        <h4 className="font-bold text-xs leading-none">{notif.title}</h4>
-                        <p className="text-[11px] leading-relaxed opacity-85">{notif.message}</p>
-                        <span className="text-[9px] opacity-60 block pt-1">
-                          {new Date(notif.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-
-            {/* Drawer Footer Actions */}
-            {notifications.length > 0 && (
-              <div className="p-4 border-t border-slate-100 shrink-0">
-                <button
-                  onClick={handleClearNotifications}
-                  className="w-full bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs py-2 rounded-xl transition-colors text-center shadow-xs"
+                <button 
+                  onClick={() => setShowDrawer(false)}
+                  className="text-[#8b9bb4] hover:text-white p-1 hover:bg-[#1c2b3a] rounded-none transition-colors"
                 >
-                  Clear All Notification Logs
+                  <X className="w-4 h-4" />
                 </button>
               </div>
-            )}
+
+              {/* Logs list */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {notifications.length === 0 ? (
+                  <div className="text-center py-12 text-[#8b9bb4]">
+                    <Bell className="w-8 h-8 mx-auto mb-2 text-[#1c2b3a]" />
+                    <p className="text-[10px]">No logs recorded.</p>
+                  </div>
+                ) : (
+                  notifications.map((notif) => {
+                    const typeColors = {
+                      info: 'bg-[#1c2b3a]/30 border-[#1c2b3a] text-[#8b9bb4]',
+                      alert: 'bg-transparent border-[#ff9f30]/40 text-[#ff9f30]',
+                      success: 'bg-[#1c2b3a]/50 border-[#00ff9d]/30 text-[#00ff9d]'
+                    };
+
+                    const typeLabels = {
+                      info: 'INFO',
+                      alert: 'WARN',
+                      success: 'OK'
+                    };
+
+                    return (
+                      <div 
+                        key={notif.id} 
+                        className={`p-3 border rounded-none flex flex-col gap-1.5 ${typeColors[notif.type]}`}
+                      >
+                        <div className="flex items-center justify-between text-[8px] font-bold">
+                          <span>[{typeLabels[notif.type]}] // ENTRY</span>
+                          <span>{new Date(notif.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                        <h4 className="font-bold text-[11px] leading-snug">{notif.title}</h4>
+                        <p className="text-[10px] opacity-80 leading-relaxed">{notif.message}</p>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Actions */}
+              {notifications.length > 0 && (
+                <div className="p-4 border-t border-[#1c2b3a] shrink-0">
+                  <button
+                    onClick={handleClearNotifications}
+                    className="w-full bg-[#1c2b3a] hover:bg-[#ff9f30] hover:text-[#0b1623] text-white font-bold text-[10px] py-2 transition-colors text-center border border-[#1c2b3a]"
+                  >
+                    CLEAR LOGS
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

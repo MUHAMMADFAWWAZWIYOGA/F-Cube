@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Plus, Trash2, Link, ShoppingBag, CreditCard, Filter, ArrowUpDown, HelpCircle, CheckCircle, Clock, Eye } from 'lucide-react';
+import { Plus, Trash2, Link, ShoppingBag, ArrowUpDown, HelpCircle, CheckCircle, Eye } from 'lucide-react';
 
 export interface NeedItem {
   id: string;
@@ -35,10 +35,8 @@ export const NeedsLogger: React.FC = () => {
   const [filterPriority, setFilterPriority] = useState('all');
   const [sortBy, setSortBy] = useState<'name' | 'cost' | 'priority'>('name');
 
-  // Categories list
   const categories = ['Hardware', 'Software', 'Tool', 'Subscription', 'Service', 'Other'];
 
-  // Handle Add Item
   const handleAddItem = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
@@ -70,14 +68,12 @@ export const NeedsLogger: React.FC = () => {
     setShowAddForm(false);
   };
 
-  // Delete item
   const handleDeleteItem = (id: string) => {
     if (confirm('Are you sure you want to delete this resource log?')) {
       setItems(items.filter(item => item.id !== id));
     }
   };
 
-  // Toggle/cycle status
   const cycleStatus = (id: string) => {
     const statusCycle: ('needed' | 'researched' | 'purchased')[] = ['needed', 'researched', 'purchased'];
     const updated = items.map(item => {
@@ -93,8 +89,6 @@ export const NeedsLogger: React.FC = () => {
     });
     setItems(updated);
   };
-
-
 
   // Calculate costs
   const summaryStats = useMemo(() => {
@@ -126,7 +120,6 @@ export const NeedsLogger: React.FC = () => {
     };
   }, [items]);
 
-  // Priority ranking for sorting
   const priorityWeight = { high: 3, medium: 2, low: 1 };
 
   // Filter & Sort items
@@ -153,208 +146,185 @@ export const NeedsLogger: React.FC = () => {
   }, [items, filterCategory, filterStatus, filterPriority, sortBy]);
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto px-4 md:px-0 py-6 pb-24 md:pb-6">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+    <div className="space-y-4">
+      {/* Title Widget */}
+      <div className="flex justify-between items-center bg-[#0b1623] border border-[#1c2b3a] p-4 text-xs">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            Resource & Needs Logger <ShoppingBag className="w-5 h-5 text-emerald-500" />
+          <h2 className="font-bold text-[#f0f0f0] tracking-wider uppercase flex items-center gap-1.5">
+            SYS.INVENTORY <ShoppingBag className="w-3.5 h-3.5 text-[#00ff9d]" />
           </h2>
-          <p className="text-slate-500 text-sm mt-1">
-            "Apa Saja Yang Dibutuhkan" — Log tools, subscriptions, hardware, or assets needed for your setups.
-          </p>
+          <p className="text-[#8b9bb4] text-[9px] mt-0.5 uppercase">RESOURCE & NEEDS LOGGER</p>
         </div>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="flex items-center space-x-2 bg-slate-900 text-white hover:bg-slate-800 transition-colors px-4 py-2.5 rounded-xl font-medium text-sm shadow-sm"
+          className="flex items-center space-x-1 bg-[#ff9f30] text-[#0b1623] px-2.5 py-1.5 font-bold text-[10px] tracking-wide"
         >
-          <Plus className="w-4 h-4" />
-          <span>Add New Need</span>
+          <Plus className="w-3.5 h-3.5" />
+          <span>ADD NEW</span>
         </button>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Outstanding Budget</span>
-            <h3 className="text-xl font-bold text-slate-900">
-              Rp {summaryStats.neededTotal.toLocaleString('id-ID')}
-            </h3>
-            <span className="text-[10px] text-slate-500">{summaryStats.neededCount} items pending acquisition</span>
-          </div>
-          <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
-            <Clock className="w-6 h-6" />
-          </div>
+      {/* Summary widgets */}
+      <div className="grid grid-cols-3 gap-2.5">
+        <div className="app-card p-3 flex flex-col justify-between">
+          <span className="text-[7px] text-[#8b9bb4] font-bold uppercase tracking-wider block">PENDING BUDGET</span>
+          <h3 className="text-xs font-bold text-[#ff9f30] mt-1">
+            Rp {summaryStats.neededTotal.toLocaleString('id-ID')}
+          </h3>
+          <span className="text-[8px] text-[#8b9bb4] mt-1 block">{summaryStats.neededCount} ITEMS</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Invested / Spent</span>
-            <h3 className="text-xl font-bold text-emerald-600">
-              Rp {summaryStats.purchasedTotal.toLocaleString('id-ID')}
-            </h3>
-            <span className="text-[10px] text-emerald-500">{summaryStats.purchasedCount} items purchased</span>
-          </div>
-          <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
-            <CreditCard className="w-6 h-6" />
-          </div>
+        <div className="app-card p-3 flex flex-col justify-between">
+          <span className="text-[7px] text-[#8b9bb4] font-bold uppercase tracking-wider block">ACQUIRED/SPENT</span>
+          <h3 className="text-xs font-bold text-[#00ff9d] mt-1">
+            Rp {summaryStats.purchasedTotal.toLocaleString('id-ID')}
+          </h3>
+          <span className="text-[8px] text-[#8b9bb4] mt-1 block">{summaryStats.purchasedCount} ITEMS</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">Total Tracked Items</span>
-            <h3 className="text-xl font-bold text-slate-950">
-              {summaryStats.totalItemsCount}
-            </h3>
-            <span className="text-[10px] text-slate-500">Resource checklist inventory</span>
-          </div>
-          <div className="w-12 h-12 bg-slate-50 text-slate-600 rounded-xl flex items-center justify-center">
-            <ShoppingBag className="w-6 h-6" />
-          </div>
+        <div className="app-card p-3 flex flex-col justify-between">
+          <span className="text-[7px] text-[#8b9bb4] font-bold uppercase tracking-wider block">TOTAL ITEMS</span>
+          <h3 className="text-xs font-bold text-[#f0f0f0] mt-1">
+            {summaryStats.totalItemsCount}
+          </h3>
+          <span className="text-[8px] text-[#8b9bb4] mt-1 block">LOG ENTRIES</span>
         </div>
       </div>
 
-      {/* Add New Item Form */}
+      {/* Form Drawer */}
       {showAddForm && (
-        <form onSubmit={handleAddItem} className="bg-white p-6 rounded-2xl border border-slate-100 shadow-md space-y-4 animate-fadeIn">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-1.5 col-span-1 md:col-span-2">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Item Name</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="E.g., Keychron K2, Vercel Pro Plan"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-all"
-                required
-              />
-            </div>
+        <form onSubmit={handleAddItem} className="bg-[#0b1623] border border-[#1c2b3a] p-4 space-y-3.5 animate-fadeIn text-xs">
+          <div className="space-y-1.5">
+            <label className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-wider block">Item Name</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="E.g., Keyboard, Vercel Pro Plan"
+              className="w-full bg-[#0b1623] text-[#f0f0f0] px-3 py-2 border border-[#1c2b3a] focus:outline-none focus:border-[#ff9f30] text-xs"
+              required
+            />
+          </div>
 
+          <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Category</label>
+              <label className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-wider block">Category</label>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-all bg-white"
+                className="w-full bg-[#0b1623] text-[#f0f0f0] px-3 py-2 border border-[#1c2b3a] focus:outline-none focus:border-[#ff9f30] text-xs uppercase"
               >
                 {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                  <option key={cat} value={cat}>{cat.toUpperCase()}</option>
                 ))}
               </select>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Quantity</label>
+              <label className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-wider block">Quantity</label>
               <input
                 type="number"
                 min="1"
                 value={qty}
                 onChange={(e) => setQty(parseInt(e.target.value) || 1)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-all"
+                className="w-full bg-[#0b1623] text-[#f0f0f0] px-3 py-2 border border-[#1c2b3a] focus:outline-none focus:border-[#ff9f30] text-xs"
                 required
               />
             </div>
+          </div>
 
+          <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Estimated Cost (Rp)</label>
+              <label className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-wider block">Cost per unit (Rp)</label>
               <input
                 type="number"
                 min="0"
                 value={estimatedCost}
                 onChange={(e) => setEstimatedCost(parseFloat(e.target.value) || 0)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-all"
+                className="w-full bg-[#0b1623] text-[#f0f0f0] px-3 py-2 border border-[#1c2b3a] focus:outline-none focus:border-[#ff9f30] text-xs"
                 required
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Priority</label>
+              <label className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-wider block">Priority</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value as any)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-all bg-white"
+                className="w-full bg-[#0b1623] text-[#f0f0f0] px-3 py-2 border border-[#1c2b3a] focus:outline-none focus:border-[#ff9f30] text-xs uppercase"
               >
-                <option value="low">Low Priority</option>
-                <option value="medium">Medium Priority</option>
-                <option value="high">High Priority</option>
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Status</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as any)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-all bg-white"
-              >
-                <option value="needed">Needed</option>
-                <option value="researched">Researched</option>
-                <option value="purchased">Purchased</option>
+                <option value="low">LOW</option>
+                <option value="medium">MEDIUM</option>
+                <option value="high">HIGH</option>
               </select>
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Reference/Merchant Link (Optional)</label>
+            <label className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-wider block">Status</label>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value as any)}
+              className="w-full bg-[#0b1623] text-[#f0f0f0] px-3 py-2 border border-[#1c2b3a] focus:outline-none focus:border-[#ff9f30] text-xs uppercase"
+            >
+              <option value="needed">NEEDED</option>
+              <option value="researched">RESEARCHED</option>
+              <option value="purchased">PURCHASED</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-wider block">Reference URL</label>
             <input
               type="url"
               value={link}
               onChange={(e) => setLink(e.target.value)}
-              placeholder="https://example.com/product"
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-all"
+              placeholder="https://example.com"
+              className="w-full bg-[#0b1623] text-[#f0f0f0] px-3 py-2 border border-[#1c2b3a] focus:outline-none focus:border-[#ff9f30] text-xs"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Notes / Specifications (Optional)</label>
+            <label className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-wider block">Specifications / Notes</label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="E.g., Grey color, ISO layout, requires USB-C adapter..."
+              placeholder="E.g., Gray color, US layout..."
               rows={2}
-              className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-sm transition-all resize-none"
+              className="w-full bg-[#0b1623] text-[#f0f0f0] px-3 py-2 border border-[#1c2b3a] focus:outline-none focus:border-[#ff9f30] text-xs resize-none"
             />
           </div>
 
-          <div className="flex justify-end space-x-3 pt-2">
+          <div className="flex justify-end space-x-2 pt-1">
             <button
               type="button"
               onClick={() => setShowAddForm(false)}
-              className="px-4 py-2 rounded-xl text-sm font-medium text-slate-500 hover:bg-slate-100 transition-colors"
+              className="px-3 py-1.5 text-[10px] font-bold text-[#8b9bb4] hover:bg-[#1c2b3a]"
             >
-              Cancel
+              CANCEL
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition-colors shadow-sm"
+              className="px-4 py-1.5 text-[10px] font-bold bg-[#ff9f30] text-[#0b1623]"
             >
-              Log Resource
+              LOG ITEM
             </button>
           </div>
         </form>
       )}
 
-      {/* Catalog Filters Workspace */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center space-x-2 text-slate-400 text-xs font-bold">
-            <Filter className="w-3.5 h-3.5" />
-            <span>Filters:</span>
-          </div>
-
+      {/* Filters workspace */}
+      <div className="bg-[#0b1623] border border-[#1c2b3a] p-3.5 space-y-3">
+        <div className="grid grid-cols-3 gap-2">
           {/* Category Filter */}
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="px-3 py-1.5 bg-slate-50 border border-slate-150 rounded-xl text-xs font-medium text-slate-600 focus:outline-none"
+            className="w-full bg-[#0b1623] border border-[#1c2b3a] px-2 py-1.5 text-[9px] font-bold text-[#8b9bb4] focus:outline-none focus:border-[#ff9f30]"
           >
-            <option value="all">All Categories</option>
+            <option value="all">ALL CATEGORIES</option>
             {categories.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
+              <option key={cat} value={cat}>{cat.toUpperCase()}</option>
             ))}
           </select>
 
@@ -362,82 +332,80 @@ export const NeedsLogger: React.FC = () => {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-3 py-1.5 bg-slate-50 border border-slate-150 rounded-xl text-xs font-medium text-slate-600 focus:outline-none"
+            className="w-full bg-[#0b1623] border border-[#1c2b3a] px-2 py-1.5 text-[9px] font-bold text-[#8b9bb4] focus:outline-none focus:border-[#ff9f30]"
           >
-            <option value="all">All Statuses</option>
-            <option value="needed">Needed</option>
-            <option value="researched">Researched</option>
-            <option value="purchased">Purchased</option>
+            <option value="all">ALL STATUSES</option>
+            <option value="needed">NEEDED</option>
+            <option value="researched">RESEARCHED</option>
+            <option value="purchased">PURCHASED</option>
           </select>
 
           {/* Priority Filter */}
           <select
             value={filterPriority}
             onChange={(e) => setFilterPriority(e.target.value)}
-            className="px-3 py-1.5 bg-slate-50 border border-slate-150 rounded-xl text-xs font-medium text-slate-600 focus:outline-none"
+            className="w-full bg-[#0b1623] border border-[#1c2b3a] px-2 py-1.5 text-[9px] font-bold text-[#8b9bb4] focus:outline-none focus:border-[#ff9f30]"
           >
-            <option value="all">All Priorities</option>
-            <option value="low">Low Priority</option>
-            <option value="medium">Medium Priority</option>
-            <option value="high">High Priority</option>
+            <option value="all">ALL PRIORITIES</option>
+            <option value="low">LOW</option>
+            <option value="medium">MEDIUM</option>
+            <option value="high">HIGH</option>
           </select>
         </div>
 
         {/* Sorting option */}
-        <div className="flex items-center space-x-2">
-          <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
-          <span className="text-xs font-bold text-slate-400">Sort by:</span>
-          <div className="flex bg-slate-100 p-0.5 rounded-lg">
+        <div className="flex items-center justify-between gap-2 border-t border-[#1c2b3a]/50 pt-2 text-[9px] font-bold text-[#8b9bb4]">
+          <span className="flex items-center gap-1">
+            <ArrowUpDown className="w-3.5 h-3.5" /> SORT BY:
+          </span>
+          <div className="flex bg-[#1c2b3a]/50 p-0.5 border border-[#1c2b3a]">
             <button
               onClick={() => setSortBy('name')}
-              className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${
-                sortBy === 'name' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'
+              className={`px-2 py-1 text-[8px] font-bold rounded-none transition-all ${
+                sortBy === 'name' ? 'bg-[#ff9f30] text-[#0b1623]' : 'text-[#8b9bb4] hover:text-white'
               }`}
             >
-              Name
+              NAME
             </button>
             <button
               onClick={() => setSortBy('cost')}
-              className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${
-                sortBy === 'cost' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'
+              className={`px-2 py-1 text-[8px] font-bold rounded-none transition-all ${
+                sortBy === 'cost' ? 'bg-[#ff9f30] text-[#0b1623]' : 'text-[#8b9bb4] hover:text-white'
               }`}
             >
-              Cost
+              COST
             </button>
             <button
               onClick={() => setSortBy('priority')}
-              className={`px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all ${
-                sortBy === 'priority' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-700'
+              className={`px-2 py-1 text-[8px] font-bold rounded-none transition-all ${
+                sortBy === 'priority' ? 'bg-[#ff9f30] text-[#0b1623]' : 'text-[#8b9bb4] hover:text-white'
               }`}
             >
-              Priority
+              PRIORITY
             </button>
           </div>
         </div>
       </div>
 
-      {/* Resource Inventory List Cards */}
+      {/* Resource log items */}
       {processedItems.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center shadow-sm">
-          <ShoppingBag className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-          <h4 className="text-slate-800 font-bold text-base">No Items Logged</h4>
-          <p className="text-slate-500 text-sm mt-1">
-            There are no resources logged matching your current filters. Add items you need for your work.
-          </p>
+        <div className="bg-[#0b1623] border border-[#1c2b3a] p-8 text-center">
+          <ShoppingBag className="w-8 h-8 text-[#1c2b3a] mx-auto mb-1.5" />
+          <p className="text-[#8b9bb4] text-[10px]">NO ITEMS RECORDED IN CATALOG.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-3.5">
           {processedItems.map((item) => {
             const priorityColors = {
-              high: 'bg-red-50 text-red-700 border-red-100',
-              medium: 'bg-amber-50 text-amber-700 border-amber-100',
-              low: 'bg-slate-100 text-slate-600 border-slate-200'
+              high: 'bg-[#1c2b3a] text-[#ff9f30] border-[#ff9f30]/40',
+              medium: 'bg-[#1c2b3a]/50 text-[#8b9bb4] border-[#1c2b3a]',
+              low: 'bg-[#0b1623] text-[#8b9bb4] border-[#1c2b3a]'
             };
 
             const statusColors = {
-              needed: 'bg-amber-500 text-white',
-              researched: 'bg-blue-500 text-white',
-              purchased: 'bg-emerald-500 text-white'
+              needed: 'bg-[#ff9f30]/20 text-[#ff9f30] border-[#ff9f30]/40',
+              researched: 'bg-[#1c2b3a] text-[#8b9bb4] border-[#1c2b3a]',
+              purchased: 'bg-[#00ff9d]/20 text-[#00ff9d] border-[#00ff9d]/30'
             };
 
             const statusIcons = {
@@ -449,70 +417,69 @@ export const NeedsLogger: React.FC = () => {
             const StatusIcon = statusIcons[item.status];
 
             return (
-              <div key={item.id} className="bg-white border border-slate-100 hover:border-slate-350 transition-all rounded-2xl p-5 shadow-sm hover:shadow-md flex flex-col justify-between gap-4">
-                <div className="space-y-3">
-                  {/* Top Metadata row */}
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50/50 border border-emerald-100/50 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                      {item.category}
+              <div key={item.id} className="app-card p-4 flex flex-col justify-between gap-3 text-xs">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2 text-[9px] font-bold">
+                    <span className="text-[#ff9f30] bg-[#1c2b3a]/30 border border-[#1c2b3a] px-1.5 py-0.2">
+                      {item.category.toUpperCase()}
                     </span>
-                    <div className="flex items-center space-x-2">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 border rounded-full capitalize ${priorityColors[item.priority]}`}>
-                        {item.priority}
+                    <div className="flex items-center space-x-1.5">
+                      <span className={`px-1.5 py-0.2 border ${priorityColors[item.priority]}`}>
+                        {item.priority.toUpperCase()}
                       </span>
                       <button
                         onClick={() => cycleStatus(item.id)}
-                        className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 transition-all ${statusColors[item.status]}`}
-                        title="Click to cycle status: Needed -> Researched -> Purchased"
+                        className={`px-1.5 py-0.2 border flex items-center gap-1 transition-all ${statusColors[item.status]}`}
+                        title="Click to cycle status"
                       >
-                        <StatusIcon className="w-3 h-3" />
-                        <span className="capitalize">{item.status}</span>
+                        <StatusIcon className="w-2.5 h-2.5" />
+                        <span>{item.status.toUpperCase()}</span>
                       </button>
                     </div>
                   </div>
 
                   {/* Title & Quantity */}
-                  <div className="space-y-1">
+                  <div className="space-y-0.5">
                     <div className="flex items-baseline space-x-1.5">
-                      <h4 className="font-bold text-slate-900 text-base leading-snug">{item.name}</h4>
-                      <span className="text-slate-400 text-xs font-semibold">x{item.qty}</span>
+                      <h4 className="font-bold text-[#f0f0f0] text-xs leading-snug">{item.name}</h4>
+                      <span className="text-[#8b9bb4] text-[10px] font-bold">X{item.qty}</span>
                     </div>
-                    {item.notes && <p className="text-slate-500 text-xs leading-relaxed">{item.notes}</p>}
+                    {item.notes && <p className="text-[#8b9bb4] text-[10px] leading-relaxed mt-0.5">{item.notes}</p>}
                   </div>
                 </div>
 
-                {/* Footer Cost and Details */}
-                <div className="border-t border-slate-50 pt-3 flex items-center justify-between mt-1">
+                {/* Footer details */}
+                <div className="border-t border-[#1c2b3a]/50 pt-2.5 flex items-center justify-between text-[10px]">
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Estimated Cost</span>
-                    <h5 className="font-extrabold text-slate-900 text-sm">
+                    <span className="text-[7px] font-bold text-[#8b9bb4] uppercase block">EST. BUDGET</span>
+                    <h5 className="font-bold text-[#f0f0f0]">
                       Rp {(item.estimatedCost * item.qty).toLocaleString('id-ID')}
                       {item.qty > 1 && (
-                        <span className="text-[10px] font-medium text-slate-400 block mt-0.5">
-                          (Rp {item.estimatedCost.toLocaleString('id-ID')} each)
+                        <span className="text-[8px] text-[#8b9bb4] block font-medium mt-0.5">
+                          (Rp {item.estimatedCost.toLocaleString('id-ID')} EACH)
                         </span>
                       )}
                     </h5>
                   </div>
 
-                  <div className="flex items-center space-x-1">
+                  <div className="flex items-center space-x-2">
                     {item.link && (
                       <a
                         href={item.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-slate-400 hover:text-emerald-500 p-2 rounded-xl hover:bg-slate-50 transition-colors"
-                        title="Open purchase URL link"
+                        className="text-[#8b9bb4] hover:text-[#00ff9d] p-1.5 hover:bg-[#1c2b3a] transition-colors"
+                        title="Open URL"
                       >
-                        <Link className="w-4 h-4" />
+                        <Link className="w-3.5 h-3.5" />
                       </a>
                     )}
                     <button
                       onClick={() => handleDeleteItem(item.id)}
-                      className="text-slate-300 hover:text-red-500 p-2 rounded-xl hover:bg-slate-50 transition-colors"
-                      title="Delete Item"
+                      className="text-[#8b9bb4] hover:text-[#ff9f30] p-1.5 hover:bg-[#1c2b3a] transition-colors"
+                      title="Delete"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
