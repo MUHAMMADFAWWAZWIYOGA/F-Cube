@@ -1,0 +1,5 @@
+# Global AI Agent Skill Configuration
+This project references the global NeoLabHQ Context Engineering Kit.
+
+- Load and apply prompt skills from global path: "C:/F'version/F'AI/.context-kit/skills/"
+- Use these global patterns to guide code compilation and optimize token usage.

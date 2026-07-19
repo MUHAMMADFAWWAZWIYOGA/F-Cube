@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Flame, BookOpen, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, Flame, Calendar, BookOpen, ClipboardList } from 'lucide-react';
 
 interface BottomNavProps {
   activeTab: string;
@@ -10,6 +10,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
   const menuItems = [
     { id: 'dashboard', label: 'DASHBOARD', icon: LayoutDashboard },
     { id: 'habits', label: 'HABITS', icon: Flame },
+    { id: 'calendar', label: 'CALENDAR', icon: Calendar },
     { id: 'notes', label: 'NOTES', icon: BookOpen },
     { id: 'needs', label: 'NEEDS', icon: ClipboardList },
   ];

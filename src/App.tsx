@@ -5,8 +5,30 @@ import { Dashboard } from './components/Dashboard';
 import { HabitTracker } from './components/HabitTracker';
 import { DocumentManager } from './components/DocumentManager';
 import { NeedsLogger } from './components/NeedsLogger';
+import { CalendarTracker } from './components/CalendarTracker';
 import { generatePinHash } from './utils/crypto';
-import { Bell, X, Lock, Download, Upload, Shield } from 'lucide-react';
+import { Bell, X, Lock, Download, Upload, Shield, RefreshCw } from 'lucide-react';
+
+const LOADING_LOGS = [
+  "DECRYPTING DATABASE CORRIDORS...",
+  "VERIFYING CRYPTOGRAPHIC KEY STREAM...",
+  "LOADING PERSONAL HABIT REGISTRIES...",
+  "SYNCHRONIZING SCHEMATIC ALARM LOOPS...",
+  "PARSING LOCAL INVENTORY RESOURCE SCHEMES...",
+  "ESTABLISHING SECURED BLUEPRINT PROTOCOLS...",
+  "SYSTEM COMPATIBILITY CHECK: PASS",
+  "TERMINAL SECURED // BOOT SUCCESSFUL"
+];
+
+const MOTIVATIONAL_QUOTES = [
+  { text: "Disiplin adalah jembatan antara tujuan dan pencapaian.", author: "Jim Rohn" },
+  { text: "Tindakan adalah kunci dasar untuk semua kesuksesan.", author: "Pablo Picasso" },
+  { text: "Jangan habiskan waktu memukul dinding, berharap mengubahnya menjadi pintu.", author: "Coco Chanel" },
+  { text: "Cara terbaik untuk memprediksi masa depan adalah dengan menciptakannya.", author: "Peter Drucker" },
+  { text: "Fokus pada prosesnya, bukan hanya pada hasil akhirnya.", author: "F'Cube Monitor" },
+  { text: "Kecerdasan tanpa ambisi bagaikan burung tanpa sayap.", author: "Salvador Dali" },
+  { text: "Kemajuan hari demi hari yang sedikit demi sedikit akan menghasilkan hasil yang luar biasa.", author: "Robin Sharma" }
+];
 
 export interface NotificationItem {
   id: string;
@@ -34,6 +56,51 @@ function App() {
   const [storedPinHash, setStoredPinHash] = useState<string>(() => {
     return localStorage.getItem('my-monitor-pin-hash') || '';
   });
+
+  // Loading Screen States
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [loadingProgress, setLoadingProgress] = useState<number>(0);
+  const [loadingMessage, setLoadingMessage] = useState<string>('');
+  const [currentQuote, setCurrentQuote] = useState<{ text: string; author: string }>({ text: '', author: '' });
+
+  // Loading Screen Hook
+  useEffect(() => {
+    if (!isLoading) return;
+
+    const rand = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
+    setCurrentQuote(rand);
+    setLoadingProgress(0);
+
+    const duration = 2000; // 2 seconds
+    const step = 25; // 25ms tick rate
+    const increment = (100 / (duration / step));
+
+    const timer = setInterval(() => {
+      setLoadingProgress(prev => {
+        const next = prev + increment;
+        if (next >= 100) {
+          clearInterval(timer);
+          setTimeout(() => {
+            setIsLoading(false);
+          }, 300);
+          return 100;
+        }
+        return next;
+      });
+    }, step);
+
+    return () => clearInterval(timer);
+  }, [isLoading]);
+
+  // Update loading log string based on progress
+  useEffect(() => {
+    if (!isLoading) return;
+    const idx = Math.min(
+      Math.floor((loadingProgress / 100) * LOADING_LOGS.length),
+      LOADING_LOGS.length - 1
+    );
+    setLoadingMessage(LOADING_LOGS[idx]);
+  }, [loadingProgress, isLoading]);
 
   // Lockscreen keypad input buffers
   const [inputPin, setInputPin] = useState<string>('');
@@ -200,17 +267,30 @@ function App() {
   // Lockscreen Keypad actions
   const handleKeyPress = (val: string) => {
     setErrorMessage('');
-    if (inputPin.length >= 4) return;
+    if (inputPin.length >= 6) return;
     const newBuf = inputPin + val;
     setInputPin(newBuf);
 
-    if (newBuf.length === 4) {
-      // Auto submit check
+    // 1. Backwards compatibility: If stored PIN was 4 digits, check at length 4
+    if (newBuf.length === 4 && storedPinHash) {
+      generatePinHash(newBuf).then((hash) => {
+        if (hash === storedPinHash) {
+          setPin(newBuf);
+          setIsLoading(true);
+          setIsLocked(false);
+          setInputPin('');
+        }
+      });
+    }
+
+    // 2. Setup or normal verification at length 6
+    if (newBuf.length === 6) {
       if (storedPinHash) {
         // Unlock mode
         generatePinHash(newBuf).then((hash) => {
           if (hash === storedPinHash) {
             setPin(newBuf);
+            setIsLoading(true);
             setIsLocked(false);
             setInputPin('');
           } else {
@@ -220,7 +300,7 @@ function App() {
           }
         });
       } else {
-        // Setup PIN mode
+        // Setup PIN mode (requires 6 digits)
         if (setupStep === 'create') {
           setTempNewPin(newBuf);
           setSetupStep('confirm');
@@ -231,6 +311,7 @@ function App() {
               localStorage.setItem('my-monitor-pin-hash', hash);
               setStoredPinHash(hash);
               setPin(newBuf);
+              setIsLoading(true);
               setIsLocked(false);
               setInputPin('');
               setSetupStep('create');
@@ -255,6 +336,26 @@ function App() {
   const handleKeyBackspace = () => {
     setInputPin(inputPin.slice(0, -1));
     setErrorMessage('');
+  };
+
+  // Reset all local storage partitions and reboot
+  const handleSystemReset = () => {
+    const confirm1 = window.confirm("WARNING: You are about to format the F'Cube database.\n\nThis will permanently delete all your habits, notes, calendar activities, inventory settings, and reminders.\n\nAre you sure you want to proceed?");
+    if (!confirm1) return;
+
+    const confirm2 = window.confirm("FINAL WARNING: This is irreversible. All decrypted partitions will be wiped out.\n\nPress OK to reset and reboot.");
+    if (!confirm2) return;
+
+    localStorage.removeItem('my-monitor-pin-hash');
+    localStorage.removeItem('my-monitor-habits');
+    localStorage.removeItem('my-monitor-notes');
+    localStorage.removeItem('my-monitor-needs');
+    localStorage.removeItem('my-monitor-reminders');
+    localStorage.removeItem('my-monitor-notifications');
+    localStorage.removeItem('my-monitor-calendar');
+
+    alert("SYSTEM RESTORE COMPLETED // REBOOTING...");
+    window.location.reload();
   };
 
   // Export encrypted storage JSON file to download
@@ -324,6 +425,8 @@ function App() {
         return <Dashboard setActiveTab={setActiveTab} pin={pin} />;
       case 'habits':
         return <HabitTracker pin={pin} />;
+      case 'calendar':
+        return <CalendarTracker pin={pin} />;
       case 'notes':
         return <DocumentManager pin={pin} />;
       case 'needs':
@@ -333,7 +436,65 @@ function App() {
     }
   };
 
-  // 1. Render Lockscreen if no PIN entered yet
+  // 1. Render Loading Screen if active
+  if (isLoading) {
+    const barWidth = 20;
+    const filledCount = Math.floor((loadingProgress / 100) * barWidth);
+    const emptyCount = barWidth - filledCount;
+    const progressBarStr = '[' + '█'.repeat(filledCount) + '░'.repeat(emptyCount) + ']';
+
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-transparent py-0 md:py-8">
+        <div className="w-full max-w-md h-screen md:h-[820px] bg-[#0b1623] text-[#f0f0f0] flex flex-col justify-between p-6 md:border-2 md:border-[#1c2b3a] md:shadow-2xl relative overflow-hidden">
+          {/* Scanline overlay for cybernetic effect */}
+          <div className="absolute inset-0 pointer-events-none opacity-5 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[size:100%_4px,6px_100%]" />
+          
+          <div className="my-auto space-y-8 flex flex-col items-center justify-center text-center px-4">
+            {/* Spinning/pulsing cybernetic loader */}
+            <div className="relative w-16 h-16 flex items-center justify-center border border-[#1c2b3a] bg-[#1c2b3a]/20">
+              <div className="absolute inset-1 border border-dashed border-[#ff9f30] animate-spin [animation-duration:10s]" />
+              <div className="absolute w-2 h-2 bg-[#00ff9d] animate-ping" />
+            </div>
+
+            <div className="space-y-3 w-full">
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-[#ff9f30] animate-pulse">
+                SYS.BOOTING // CONNECTING SECURED STREAM
+              </h3>
+              
+              {/* Progress percentage */}
+              <div className="font-mono text-xs font-bold text-[#00ff9d]">
+                {progressBarStr} {Math.round(loadingProgress)}%
+              </div>
+
+              {/* Changing status log */}
+              <p className="text-[8px] font-bold text-[#8b9bb4] tracking-wider uppercase h-4">
+                &gt;&gt; {loadingMessage}
+              </p>
+            </div>
+
+            {/* Motivational Quote with smooth styling */}
+            <div className="border border-[#1c2b3a] bg-[#1c2b3a]/10 p-4 w-full space-y-2 mt-4 select-none relative">
+              <span className="absolute -top-2 left-3 bg-[#0b1623] px-2 text-[7px] font-bold text-[#8b9bb4] tracking-wider border border-[#1c2b3a]">
+                SYS.INSPIRATION
+              </span>
+              <p className="text-xs italic text-[#f0f0f0] leading-relaxed">
+                "{currentQuote.text}"
+              </p>
+              <p className="text-[8px] font-bold text-[#ff9f30] tracking-widest uppercase text-right">
+                — {currentQuote.author}
+              </p>
+            </div>
+          </div>
+
+          <div className="text-center text-[7px] text-[#8b9bb4] uppercase tracking-wider">
+            F'Cube Secure Decryption Core v1.2.0
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Render Lockscreen if no PIN entered yet
   if (isLocked) {
     const isSetup = !storedPinHash;
     return (
@@ -361,7 +522,7 @@ function App() {
 
               {/* Dots grid indicator */}
               <div className="flex justify-center space-x-4 my-3.5">
-                {[0, 1, 2, 3].map((idx) => (
+                {[0, 1, 2, 3, 4, 5].map((idx) => (
                   <div
                     key={idx}
                     className={`w-3.5 h-3.5 border transition-all duration-150 ${
@@ -429,7 +590,7 @@ function App() {
   // 2. Render App Shell if unlocked
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-transparent py-0 md:py-8">
-      <div className="w-full max-w-md min-h-screen md:min-h-[820px] md:h-[820px] bg-[#0b1623] text-[#f0f0f0] flex flex-col relative overflow-hidden md:border-2 md:border-[#1c2b3a] md:shadow-2xl">
+      <div className="w-full max-w-md h-screen md:h-[820px] bg-[#0b1623] text-[#f0f0f0] flex flex-col relative overflow-hidden md:border-2 md:border-[#1c2b3a] md:shadow-2xl">
         
         {/* Top Header Bar */}
         <header className="bg-[#0b1623] border-b border-[#1c2b3a] px-5 py-4 flex items-center justify-between shrink-0">
@@ -449,10 +610,11 @@ function App() {
             {/* Lock Button */}
             <button
               onClick={handleLock}
-              className="p-1 text-[#8b9bb4] hover:text-[#ff9f30] transition-colors"
+              className="p-1 border border-[#1c2b3a] bg-[#1c2b3a]/30 hover:border-[#ff9f30] text-[#8b9bb4] hover:text-[#ff9f30] transition-colors flex items-center justify-center gap-1 px-2 py-0.5 text-[8px] font-bold"
               title="Lock Terminal"
             >
-              <Lock className="w-4.5 h-4.5" />
+              <Lock className="w-3 h-3 text-[#ff9f30]" />
+              <span>LOCK</span>
             </button>
 
             {/* Notification Bell */}
@@ -597,6 +759,22 @@ function App() {
                           className="hidden"
                         />
                       </label>
+                    </div>
+
+                    <div className="border border-[#ff9f30]/40 p-3 space-y-3 bg-[#ff9f30]/5">
+                      <div>
+                        <span className="text-[8px] font-bold text-[#ff9f30] uppercase tracking-wider block">// SYSTEM RESET</span>
+                        <p className="text-[9px] text-[#8b9bb4] mt-0.5 leading-relaxed text-wrap">
+                          Completely erase all encrypted databases, cache, and settings on this device. This action is irreversible.
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleSystemReset}
+                        className="w-full bg-[#1c2b3a] hover:bg-[#ef4444] hover:text-white text-[#ff9f30] font-bold text-[9px] tracking-wider py-2 flex items-center justify-center gap-1.5 border border-[#1c2b3a] hover:border-[#ef4444] transition-colors"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 text-[#ff9f30]" />
+                        <span>RESET ALL DATA</span>
+                      </button>
                     </div>
                   </div>
                 )}
