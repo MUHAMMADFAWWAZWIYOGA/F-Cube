@@ -27,45 +27,42 @@
 @layer base {
   body {
     background-color: #0b1623;
-    /* Drafting grid background lines */
+    /* Drafting grid background lines - subtle industrial theme */
     background-image: 
-      linear-gradient(to right, #1c2b3a 1px, transparent 1px),
-      linear-gradient(to bottom, #1c2b3a 1px, transparent 1px);
-    background-size: 20px 20px;
+      linear-gradient(to right, rgba(28, 43, 58, 0.4) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(28, 43, 58, 0.4) 1px, transparent 1px);
+    background-size: 24px 24px;
     @apply text-[#f0f0f0] font-sans antialiased selection:bg-accent/30 selection:text-white overflow-x-hidden;
   }
-}
 
-/* Custom scrollbars - Industrial wireframe style */
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
-::-webkit-scrollbar-track {
-  background: #0b1623;
-}
-::-webkit-scrollbar-thumb {
-  background: #1c2b3a;
-  border: 1px solid #ff9f30;
+  /* Completely hide distracting side scrollbars for a clean, non-glaring look */
+  ::-webkit-scrollbar {
+    display: none !important;
+    width: 0px !important;
+    height: 0px !important;
+  }
+  * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
 }
 
 /* Custom card & design utilities */
 .glass-panel {
   background: #0b1623;
   border: 1px solid #1c2b3a;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .app-card {
   background: #0b1623;
   border: 1px solid #1c2b3a;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .app-card:hover {
-  border-color: #ff9f30;
-  box-shadow: 0 4px 20px rgba(255, 159, 48, 0.12);
-  transform: translateY(-1px);
+  border-color: rgba(255, 159, 48, 0.7);
+  box-shadow: 0 6px 24px rgba(255, 159, 48, 0.1);
 }
 
 .gradient-text {
@@ -85,7 +82,7 @@
 @keyframes fadeSlideUp {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.98);
+    transform: translateY(10px) scale(0.99);
   }
   to {
     opacity: 1;
@@ -96,7 +93,7 @@
 @keyframes slideLeft {
   from {
     opacity: 0;
-    transform: translateX(35px);
+    transform: translateX(25px);
   }
   to {
     opacity: 1;
@@ -107,7 +104,7 @@
 @keyframes slideRight {
   from {
     opacity: 0;
-    transform: translateX(-35px);
+    transform: translateX(-25px);
   }
   to {
     opacity: 1;
@@ -117,24 +114,35 @@
 
 @keyframes iconPop {
   0% {
-    transform: scale(0.85);
+    transform: scale(0.9);
   }
   50% {
-    transform: scale(1.18);
+    transform: scale(1.12);
   }
   100% {
     transform: scale(1);
   }
 }
 
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -15px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
 @keyframes neonGlowPulse {
   0%, 100% {
-    box-shadow: 0 -4px 20px rgba(255, 159, 48, 0.25), inset 0 1px 0 rgba(255, 159, 48, 0.4);
-    border-color: rgba(255, 159, 48, 0.8);
+    box-shadow: 0 -4px 20px rgba(255, 159, 48, 0.2), inset 0 1px 0 rgba(255, 159, 48, 0.4);
+    border-color: rgba(255, 159, 48, 0.7);
   }
   50% {
-    box-shadow: 0 -4px 35px rgba(255, 159, 48, 0.45), inset 0 1px 0 rgba(0, 255, 157, 0.4);
-    border-color: rgba(0, 255, 157, 0.8);
+    box-shadow: 0 -4px 30px rgba(255, 159, 48, 0.35), inset 0 1px 0 rgba(0, 255, 157, 0.4);
+    border-color: rgba(0, 255, 157, 0.7);
   }
 }
 
@@ -152,44 +160,53 @@
 }
 
 .animate-fade-slide-up {
-  animation: fadeSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-slide-left {
-  animation: slideLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideLeft 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-slide-right {
-  animation: slideRight 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideRight 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-icon-pop {
-  animation: iconPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: iconPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.animate-toast-in {
+  animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .cyber-nav-dock {
   background: linear-gradient(180deg, rgba(15, 28, 44, 0.98) 0%, rgba(11, 22, 35, 0.99) 100%);
   border-top: 2px solid #ff9f30;
-  box-shadow: 0 -6px 30px rgba(255, 159, 48, 0.25), inset 0 1px 0 rgba(255, 159, 48, 0.5);
+  box-shadow: 0 -6px 25px rgba(255, 159, 48, 0.2), inset 0 1px 0 rgba(255, 159, 48, 0.4);
   backdrop-filter: blur(12px);
   transition: all 0.3s ease-in-out;
 }
 
-@media (orientation: landscape) and (min-width: 600px) {
+@media (orientation: landscape) {
   .cyber-nav-dock-responsive {
     top: 0 !important;
     bottom: 0 !important;
     left: 0 !important;
     right: auto !important;
-    width: 5rem !important;
+    width: 4.5rem !important;
     height: 100% !important;
     flex-direction: column !important;
     border-top: 0 !important;
     border-right: 2px solid #ff9f30 !important;
-    box-shadow: 6px 0 30px rgba(255, 159, 48, 0.25), inset 1px 0 0 rgba(255, 159, 48, 0.5) !important;
+    box-shadow: 6px 0 25px rgba(255, 159, 48, 0.2), inset 1px 0 0 rgba(255, 159, 48, 0.4) !important;
     justify-content: center !important;
-    padding-top: 1rem !important;
-    padding-bottom: 1rem !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  .app-workspace-landscape {
+    padding-left: 5.5rem !important;
+    padding-bottom: 1.5rem !important;
   }
 }
 

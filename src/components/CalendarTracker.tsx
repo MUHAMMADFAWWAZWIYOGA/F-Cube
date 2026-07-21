@@ -14,6 +14,7 @@ export interface CalendarActivity {
 
 interface CalendarTrackerProps {
   pin: string;
+  addSystemLog?: (title: string, message: string, type?: 'info' | 'alert' | 'success') => void;
 }
 
 const formatDateLocal = (date: Date) => {
@@ -23,7 +24,7 @@ const formatDateLocal = (date: Date) => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
-export const CalendarTracker: React.FC<CalendarTrackerProps> = ({ pin }) => {
+export const CalendarTracker: React.FC<CalendarTrackerProps> = ({ pin, addSystemLog }) => {
   // Sync calendar activities with local storage (encrypted using user pin)
   const [activities, setActivities] = useLocalStorage<CalendarActivity[]>('my-monitor-calendar', [], pin);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -204,6 +205,13 @@ export const CalendarTracker: React.FC<CalendarTrackerProps> = ({ pin }) => {
     };
 
     setActivities([...activities, newActivity]);
+    if (addSystemLog) {
+      addSystemLog(
+        'AGENDA DITAMBAHKAN',
+        `Kegiatan "${newActivity.title}" pada ${selectedDateStr} berhasil disimpan.`,
+        'success'
+      );
+    }
     setNewTitle('');
     setNewTime('12:00');
     setNewDescription('');
@@ -217,7 +225,15 @@ export const CalendarTracker: React.FC<CalendarTrackerProps> = ({ pin }) => {
 
   const confirmDeleteActivity = () => {
     if (!deleteConfirmId) return;
+    const target = activities.find(a => a.id === deleteConfirmId);
     setActivities(activities.filter(act => act.id !== deleteConfirmId));
+    if (addSystemLog && target) {
+      addSystemLog(
+        'AGENDA DIHAPUS',
+        `Kegiatan "${target.title}" telah dihapus dari kalender.`,
+        'alert'
+      );
+    }
     setDeleteConfirmId(null);
   };
 
@@ -290,11 +306,11 @@ export const CalendarTracker: React.FC<CalendarTrackerProps> = ({ pin }) => {
         </div>
 
         {/* Days of Week Headers */}
-        <div className="grid grid-cols-7 gap-1 text-center">
+        <div className="grid grid-cols-7 gap-1.5 text-center">
           {weekdayShort.map((day, idx) => (
             <span 
               key={day} 
-              className={`text-[8px] font-bold py-1.5 ${
+              className={`text-[8px] font-bold py-1 ${
                 idx === 0 ? 'text-[#ff9f30]' : idx === 6 ? 'text-[#ff9f30]' : 'text-[#8b9bb4]'
               }`}
             >
@@ -308,7 +324,7 @@ export const CalendarTracker: React.FC<CalendarTrackerProps> = ({ pin }) => {
           ref={gridRef}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          className="grid grid-cols-7 gap-1 touch-none"
+          className="grid grid-cols-7 gap-1.5 touch-none"
         >
           {calendarCells.map((cell, idx) => {
             const hasEvents = (activitiesByDate[cell.dateStr] || []).length > 0;
@@ -324,10 +340,10 @@ export const CalendarTracker: React.FC<CalendarTrackerProps> = ({ pin }) => {
                   setSelectedDate(cell.date);
                   setShowAddForm(false);
                 }}
-                className={`h-11 border flex flex-col items-center justify-between p-1.5 transition-all text-left relative group cursor-pointer select-none ${
+                className={`h-11 sm:h-12 border flex flex-col items-center justify-between p-1.5 transition-all text-left relative group cursor-pointer select-none ${
                   cell.isCurrentMonth 
                     ? 'bg-transparent text-[#f0f0f0] border-[#1c2b3a]' 
-                    : 'bg-[#1c2b3a]/10 text-[#8b9bb4]/40 border-[#1c2b3a]/30'
+                    : 'bg-[#1c2b3a]/10 text-[#8b9bb4]/40 border-[#1c2b3a]/20'
                 } ${
                   isSelected 
                     ? 'border-[#ff9f30] bg-[#ff9f30]/15 text-[#ff9f30] scale-105 shadow-[0_0_12px_rgba(255,159,48,0.35)] z-10 animate-icon-pop' 

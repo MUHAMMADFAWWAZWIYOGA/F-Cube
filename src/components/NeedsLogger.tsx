@@ -18,9 +18,10 @@ export interface NeedItem {
 
 interface NeedsLoggerProps {
   pin: string;
+  addSystemLog?: (title: string, message: string, type?: 'info' | 'alert' | 'success') => void;
 }
 
-export const NeedsLogger: React.FC<NeedsLoggerProps> = ({ pin }) => {
+export const NeedsLogger: React.FC<NeedsLoggerProps> = ({ pin, addSystemLog }) => {
   const [items, setItems] = useLocalStorage<NeedItem[]>('my-monitor-needs', [], pin);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
@@ -61,6 +62,13 @@ export const NeedsLogger: React.FC<NeedsLoggerProps> = ({ pin }) => {
     };
 
     setItems([...items, newItem]);
+    if (addSystemLog) {
+      addSystemLog(
+        'INVENTARIS DITAMBAHKAN',
+        `Item "${newItem.name}" (${category}) dicatat ke daftar kebutuhan.`,
+        'success'
+      );
+    }
     
     // Reset form
     setName('');
@@ -80,7 +88,15 @@ export const NeedsLogger: React.FC<NeedsLoggerProps> = ({ pin }) => {
 
   const confirmDeleteItem = () => {
     if (!deleteConfirmId) return;
+    const target = items.find(item => item.id === deleteConfirmId);
     setItems(items.filter(item => item.id !== deleteConfirmId));
+    if (addSystemLog && target) {
+      addSystemLog(
+        'INVENTARIS DIHAPUS',
+        `Item "${target.name}" telah dihapus dari inventaris.`,
+        'alert'
+      );
+    }
     setDeleteConfirmId(null);
   };
 

@@ -104,9 +104,10 @@ const parseTagInput = (tags: string): string[] => {
 
 interface DocumentManagerProps {
   pin: string;
+  addSystemLog?: (title: string, message: string, type?: 'info' | 'alert' | 'success') => void;
 }
 
-export const DocumentManager: React.FC<DocumentManagerProps> = ({ pin }) => {
+export const DocumentManager: React.FC<DocumentManagerProps> = ({ pin, addSystemLog }) => {
   const [notes, setNotes] = useLocalStorage<DocumentNote[]>('my-monitor-notes', [], pin);
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -191,6 +192,13 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({ pin }) => {
     };
 
     setNotes([newNote, ...notes]);
+    if (addSystemLog) {
+      addSystemLog(
+        'DOKUMEN DIBUAT',
+        `Dokumen baru "${newNote.title}" dibuat.`,
+        'success'
+      );
+    }
     handleSelectNote(newNote);
   };
 
@@ -218,12 +226,20 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({ pin }) => {
 
   const confirmDeleteNote = () => {
     if (!deleteConfirmId) return;
+    const target = notes.find(n => n.id === deleteConfirmId);
     setNotes(notes.filter(n => n.id !== deleteConfirmId));
     if (activeNoteId === deleteConfirmId) {
       setActiveNoteId(null);
       setEditTitle('');
       setEditContent('');
       setEditTags('');
+    }
+    if (addSystemLog && target) {
+      addSystemLog(
+        'DOKUMEN DIHAPUS',
+        `Dokumen "${target.title}" telah dihapus.`,
+        'alert'
+      );
     }
     setDeleteConfirmId(null);
   };

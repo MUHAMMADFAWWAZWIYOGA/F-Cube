@@ -23,9 +23,10 @@ const formatDateLocal = (date: Date) => {
 
 interface HabitTrackerProps {
   pin: string;
+  addSystemLog?: (title: string, message: string, type?: 'info' | 'alert' | 'success') => void;
 }
 
-export const HabitTracker: React.FC<HabitTrackerProps> = ({ pin }) => {
+export const HabitTracker: React.FC<HabitTrackerProps> = ({ pin, addSystemLog }) => {
   const [habits, setHabits] = useLocalStorage<Habit[]>('my-monitor-habits', [], pin);
   const [reminders, setReminders] = useLocalStorage<ReminderItem[]>('my-monitor-reminders', [], pin);
 
@@ -94,6 +95,13 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({ pin }) => {
     };
 
     setHabits([...habits, newHabit]);
+    if (addSystemLog) {
+      addSystemLog(
+        'KEBIASAAN DIBUAT',
+        `Kebiasaan "${newHabit.name}" (${type === 'good' ? 'Good' : 'Bad'}) telah ditambahkan ke sistem.`,
+        'success'
+      );
+    }
     setName('');
     setDescription('');
     setShowAddForm(false);
@@ -105,8 +113,16 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({ pin }) => {
 
   const confirmDeleteHabit = () => {
     if (!deleteConfirmId) return;
+    const target = habits.find(h => h.id === deleteConfirmId);
     setHabits(habits.filter(h => h.id !== deleteConfirmId));
     setReminders(reminders.filter(r => r.habitId !== deleteConfirmId));
+    if (addSystemLog && target) {
+      addSystemLog(
+        'KEBIASAAN DIHAPUS',
+        `Kebiasaan "${target.name}" telah dihapus dari registri.`,
+        'alert'
+      );
+    }
     setDeleteConfirmId(null);
   };
 

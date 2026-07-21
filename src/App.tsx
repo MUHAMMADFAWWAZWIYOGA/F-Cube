@@ -8,7 +8,7 @@ import { NeedsLogger } from './components/NeedsLogger';
 import { CalendarTracker } from './components/CalendarTracker';
 import { ConfirmModal } from './components/ConfirmModal';
 import { generatePinHash } from './utils/crypto';
-import { Bell, X, Lock, Download, Upload, Shield, RefreshCw } from 'lucide-react';
+import { Bell, X, Lock, Download, Upload, Shield, RefreshCw, Sparkles } from 'lucide-react';
 
 const LOADING_LOGS = [
   "DECRYPTING DATABASE CORRIDORS...",
@@ -132,8 +132,16 @@ function App() {
   const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
   const [slideAnim, setSlideAnim] = useState<'left' | 'right' | 'up'>('up');
   const [swipeToast, setSwipeToast] = useState<string | null>(null);
+  const [activeToast, setActiveToast] = useState<{ id: string; title: string; message: string; type: 'info' | 'alert' | 'success' } | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    // Ignore global tab swipe gesture if touching interactive controls, calendar cells, or form inputs
+    if (target.closest('.touch-none') || target.closest('button') || target.closest('input') || target.closest('textarea') || target.closest('.app-card')) {
+      setTouchStart(null);
+      setTouchEnd(null);
+      return;
+    }
     setTouchEnd(null);
     setTouchStart({
       x: e.targetTouches[0].clientX,
@@ -142,6 +150,7 @@ function App() {
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStart) return;
     setTouchEnd({
       x: e.targetTouches[0].clientX,
       y: e.targetTouches[0].clientY
@@ -186,6 +195,32 @@ function App() {
       type: 'success'
     }
   ], pin);
+
+  // Global System Logging & Cyber Toast Popup Trigger
+  const addSystemLog = (title: string, message: string, type: 'info' | 'alert' | 'success' = 'info') => {
+    const newNotif: NotificationItem = {
+      id: crypto.randomUUID(),
+      title: title.toUpperCase(),
+      message: message,
+      time: new Date().toISOString(),
+      read: false,
+      type: type
+    };
+    setNotifications(prev => [newNotif, ...prev]);
+
+    // Trigger Cyber Toast Banner
+    setActiveToast({
+      id: newNotif.id,
+      title: title.toUpperCase(),
+      message: message,
+      type: type
+    });
+
+    // Auto hide toast after 3.2 seconds
+    setTimeout(() => {
+      setActiveToast(current => (current?.id === newNotif.id ? null : current));
+    }, 3200);
+  };
   const [reminders, setReminders] = useLocalStorage<ReminderItem[]>('my-monitor-reminders', [], pin);
   const [needs] = useLocalStorage<any[]>('my-monitor-needs', [], pin);
 
@@ -487,17 +522,17 @@ function App() {
   const renderActiveTab = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard setActiveTab={setActiveTab} pin={pin} />;
+        return <Dashboard setActiveTab={setActiveTab} pin={pin} addSystemLog={addSystemLog} />;
       case 'habits':
-        return <HabitTracker pin={pin} />;
+        return <HabitTracker pin={pin} addSystemLog={addSystemLog} />;
       case 'calendar':
-        return <CalendarTracker pin={pin} />;
+        return <CalendarTracker pin={pin} addSystemLog={addSystemLog} />;
       case 'notes':
-        return <DocumentManager pin={pin} />;
+        return <DocumentManager pin={pin} addSystemLog={addSystemLog} />;
       case 'needs':
-        return <NeedsLogger pin={pin} />;
+        return <NeedsLogger pin={pin} addSystemLog={addSystemLog} />;
       default:
-        return <Dashboard setActiveTab={setActiveTab} pin={pin} />;
+        return <Dashboard setActiveTab={setActiveTab} pin={pin} addSystemLog={addSystemLog} />;
     }
   };
 
@@ -712,8 +747,25 @@ function App() {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          className="flex-1 overflow-y-auto p-4 pb-24 relative touch-pan-y"
+          className="flex-1 overflow-y-auto p-4 pb-24 app-workspace-landscape relative touch-pan-y"
         >
+          {/* Floating Cyber Toast Popup Banner */}
+          {activeToast && (
+            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-sm bg-[#0b1623] border-2 border-[#ff9f30] shadow-[0_0_25px_rgba(255,159,48,0.4)] p-3 flex items-start space-x-3 animate-toast-in select-none">
+              <div className="p-1.5 bg-[#ff9f30]/15 border border-[#ff9f30] shrink-0 mt-0.5">
+                <Sparkles className="w-4 h-4 text-[#ff9f30] animate-pulse" />
+              </div>
+              <div className="space-y-0.5 flex-1 min-w-0">
+                <div className="flex justify-between items-center text-[8px] font-bold text-[#ff9f30] tracking-widest uppercase">
+                  <span>// SYS.EVENT_NOTIFY</span>
+                  <button onClick={() => setActiveToast(null)} className="text-[#8b9bb4] hover:text-white cursor-pointer px-1">✕</button>
+                </div>
+                <h4 className="font-bold text-[11px] text-[#f0f0f0] truncate">{activeToast.title}</h4>
+                <p className="text-[9.5px] text-[#8b9bb4] leading-tight">{activeToast.message}</p>
+              </div>
+            </div>
+          )}
+
           {/* Floating Swipe Feedback Toast */}
           {swipeToast && (
             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-[#ff9f30] text-[#0b1623] text-[9px] font-extrabold tracking-widest px-3 py-1 border border-[#ff9f30] shadow-lg animate-bounce-short uppercase">

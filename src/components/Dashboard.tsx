@@ -29,6 +29,7 @@ const DASHBOARD_QUOTES = [
 interface DashboardProps {
   setActiveTab: (tab: string) => void;
   pin: string;
+  addSystemLog?: (title: string, message: string, type?: 'info' | 'alert' | 'success') => void;
 }
 
 const formatDateLocal = (date: Date) => {
