@@ -8,7 +8,7 @@ import { NeedsLogger } from './components/NeedsLogger';
 import { CalendarTracker } from './components/CalendarTracker';
 import { ConfirmModal } from './components/ConfirmModal';
 import { generatePinHash } from './utils/crypto';
-import { Bell, X, Lock, Download, Upload, Shield, RefreshCw, Sparkles, Monitor } from 'lucide-react';
+import { Bell, X, Lock, Download, Upload, Shield, RefreshCw, Sparkles } from 'lucide-react';
 
 const LOADING_LOGS = [
   "DECRYPTING DATABASE CORRIDORS...",
@@ -123,11 +123,24 @@ function App() {
   const [tempNewPin, setTempNewPin] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
-  // Manual Landscape Mode Toggle State
-  const [isForceLandscape, setIsForceLandscape] = useState<boolean>(false);
-
   // Active Tab View State
   const [activeTab, setActiveTab] = useState<string>('dashboard');
+
+  // 2-Stage Navigation System state (0: hidden line handle, 1: bottom bar dock, 2: full command hub)
+  const [navStage, setNavStage] = useState<0 | 1 | 2>(1);
+  const [lastScrollTop, setLastScrollTop] = useState<number>(0);
+
+  const handleWorkspaceScroll = (e: React.UIEvent<HTMLElement>) => {
+    const currentScrollTop = e.currentTarget.scrollTop;
+    if (currentScrollTop > lastScrollTop + 18 && currentScrollTop > 40) {
+      // Scrolling DOWN -> Auto hide nav to Stage 0 (line handle)
+      if (navStage === 1) setNavStage(0);
+    } else if (currentScrollTop < lastScrollTop - 18) {
+      // Scrolling UP -> Restore nav to Stage 1 (dock bar)
+      if (navStage === 0) setNavStage(1);
+    }
+    setLastScrollTop(currentScrollTop);
+  };
 
   // Swipe Navigation Handler for Touch Devices
   const TABS = ['dashboard', 'habits', 'calendar', 'notes', 'needs'];
@@ -715,7 +728,7 @@ function App() {
   // 2. Render App Shell if unlocked
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-transparent py-0 md:py-6 px-0 md:px-4">
-      <div className={`w-full max-w-md sm:max-w-xl md:max-w-4xl lg:max-w-6xl h-screen md:h-[90vh] md:max-h-[920px] bg-[#0b1623] text-[#f0f0f0] flex flex-col relative overflow-hidden md:border-2 md:border-[#1c2b3a] md:shadow-2xl md:rounded-3xl transition-all duration-300 ${isForceLandscape ? 'force-landscape' : ''}`}>
+      <div className="w-full max-w-md sm:max-w-xl md:max-w-4xl lg:max-w-6xl h-screen md:h-[90vh] md:max-h-[920px] bg-[#0b1623] text-[#f0f0f0] flex flex-col relative overflow-hidden md:border-2 md:border-[#1c2b3a] md:shadow-2xl md:rounded-3xl transition-all duration-300">
         
         {/* Top Header Bar */}
         <header className="bg-[#0b1623] border-b border-[#1c2b3a] px-5 py-3.5 flex items-center justify-between shrink-0 z-10">
@@ -742,19 +755,6 @@ function App() {
               <span>LOCK</span>
             </button>
 
-            {/* Manual Landscape Mode Toggle Button */}
-            <button
-              onClick={() => setIsForceLandscape(!isForceLandscape)}
-              className={`p-1.5 transition-all relative cursor-pointer rounded-full active:scale-95 ${
-                isForceLandscape 
-                  ? 'bg-[#ff9f30] text-[#0b1623] font-bold border border-[#ff9f30] shadow-[0_0_10px_rgba(255,159,48,0.5)]' 
-                  : 'text-[#8b9bb4] hover:text-[#ff9f30] hover:bg-[#1c2b3a]/40 border border-transparent'
-              }`}
-              title="Toggle Manual Landscape Dock Mode"
-            >
-              <Monitor className="w-4 h-4" />
-            </button>
-
             {/* Notification Bell */}
             <button
               onClick={() => {
@@ -772,26 +772,29 @@ function App() {
           </div>
         </header>
 
-        {/* Content View Workspace with Touch Swipe Gesture Support */}
+        {/* Content View Workspace with Touch Swipe Gesture Support & Auto-Hide Scroll Tracker */}
         <main 
+          onScroll={handleWorkspaceScroll}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           className="flex-1 overflow-y-auto p-4 pb-24 app-workspace-landscape relative touch-pan-y"
         >
-          {/* Floating Cyber Toast Popup Banner */}
+          {/* Centered Cyber Toast Popup Banner */}
           {activeToast && (
-            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-11/12 max-w-sm bg-[#0b1623] border-2 border-[#ff9f30] shadow-[0_0_25px_rgba(255,159,48,0.4)] p-3.5 flex items-start space-x-3 animate-toast-in select-none rounded-2xl">
-              <div className="p-2 bg-[#ff9f30]/15 border border-[#ff9f30] shrink-0 mt-0.5 rounded-xl">
-                <Sparkles className="w-4 h-4 text-[#ff9f30] animate-pulse" />
-              </div>
-              <div className="space-y-0.5 flex-1 min-w-0">
-                <div className="flex justify-between items-center text-[8px] font-bold text-[#ff9f30] tracking-widest uppercase">
-                  <span>// SYS.EVENT_NOTIFY</span>
-                  <button onClick={() => setActiveToast(null)} className="text-[#8b9bb4] hover:text-white cursor-pointer px-1">✕</button>
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0b1623]/60 backdrop-blur-xs animate-toast-in select-none pointer-events-auto">
+              <div className="w-full max-w-xs sm:max-w-sm bg-[#0b1623] border-2 border-[#ff9f30] shadow-[0_0_35px_rgba(255,159,48,0.4)] p-4 rounded-2xl flex items-start space-x-3.5 relative">
+                <div className="p-2.5 bg-[#ff9f30]/15 border border-[#ff9f30] rounded-xl shrink-0 mt-0.5">
+                  <Sparkles className="w-5 h-5 text-[#ff9f30] animate-pulse" />
                 </div>
-                <h4 className="font-bold text-[11px] text-[#f0f0f0] truncate">{activeToast.title}</h4>
-                <p className="text-[9.5px] text-[#8b9bb4] leading-tight">{activeToast.message}</p>
+                <div className="space-y-1 flex-1 min-w-0">
+                  <div className="flex justify-between items-center text-[8px] font-bold text-[#ff9f30] tracking-widest uppercase">
+                    <span>// SYS.EVENT_NOTIFICATION</span>
+                    <button onClick={() => setActiveToast(null)} className="text-[#8b9bb4] hover:text-white cursor-pointer px-1 py-0.5">✕</button>
+                  </div>
+                  <h4 className="font-bold text-xs text-[#f0f0f0] truncate">{activeToast.title}</h4>
+                  <p className="text-[10px] text-[#8b9bb4] leading-relaxed">{activeToast.message}</p>
+                </div>
               </div>
             </div>
           )}
@@ -807,9 +810,9 @@ function App() {
             key={activeTab} 
             className={
               slideAnim === 'left' 
-                ? 'animate-slide-left' 
+                ? 'animate-card-deck-left' 
                 : slideAnim === 'right' 
-                ? 'animate-slide-right' 
+                ? 'animate-card-deck-right' 
                 : 'animate-fade-slide-up'
             }
           >
@@ -817,8 +820,15 @@ function App() {
           </div>
         </main>
 
-        {/* Mobile bottom / Landscape left side nav bar */}
-        <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} unreadCount={unreadCount} addSystemLog={addSystemLog} />
+        {/* Mobile 2-Stage bottom / Landscape left side nav bar */}
+        <BottomNav 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          navStage={navStage}
+          setNavStage={setNavStage}
+          unreadCount={unreadCount} 
+          addSystemLog={addSystemLog} 
+        />
 
         {/* Console Drawer (Logs / Backup settings) */}
         {showDrawer && (

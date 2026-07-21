@@ -252,9 +252,9 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({ pin, addSystem
     <div className="h-[calc(100vh-140px)] flex flex-col md:h-[680px]">
       {/* If activeNote is open, show editor. Otherwise, show Master catalogue */}
       {activeNote ? (
-        <div className="flex-1 flex flex-col overflow-hidden bg-[#0b1623]">
+        <div className="flex-1 flex flex-col overflow-hidden bg-[#0b1623] animate-fade-slide-up rounded-2xl border border-[#1c2b3a]">
           {/* Header Panel */}
-          <div className="p-3 border border-[#1c2b3a] flex items-center justify-between gap-2 shrink-0">
+          <div className="p-3 border-b border-[#1c2b3a] flex items-center justify-between gap-2 shrink-0 bg-[#0b1623]">
             <button
               onClick={() => {
                 handleSaveNote();
@@ -424,7 +424,7 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({ pin, addSystem
           {/* Notes Catalogue Scrollable */}
           <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
             {filteredNotes.length === 0 ? (
-              <div className="bg-[#0b1623] border border-[#1c2b3a] p-8 text-center">
+              <div className="bg-[#0b1623] border border-[#1c2b3a] p-8 text-center rounded-2xl">
                 <FileText className="w-8 h-8 text-[#1c2b3a] mx-auto mb-1.5" />
                 <p className="text-[#8b9bb4] text-[10px]">NO DOCUMENTS REGISTERED IN DATABASE.</p>
               </div>
@@ -433,10 +433,10 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({ pin, addSystem
                 <button
                   key={note.id}
                   onClick={() => handleSelectNote(note)}
-                  className={`w-full text-left p-3.5 border transition-all flex items-start justify-between group ${
+                  className={`w-full text-left p-4 border transition-all duration-200 flex items-start justify-between group rounded-2xl cursor-pointer active:scale-95 hover:scale-[1.01] ${
                     activeNoteId === note.id
-                      ? 'bg-[#1c2b3a]/30 border-[#ff9f30]'
-                      : 'bg-[#0b1623] border-[#1c2b3a] hover:border-[#8b9bb4]'
+                      ? 'bg-[#1c2b3a]/30 border-[#ff9f30] shadow-[0_0_15px_rgba(255,159,48,0.15)]'
+                      : 'bg-[#0b1623] border-[#1c2b3a] hover:border-[#ff9f30]/60'
                   }`}
                 >
                   <div className="space-y-1 min-w-0 pr-2">
@@ -451,15 +451,15 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({ pin, addSystem
                         minute: '2-digit'
                       }).toUpperCase()}
                     </p>
-                    <div className="flex flex-wrap gap-1 mt-1">
+                    <div className="flex flex-wrap gap-1 mt-1.5">
                       {note.tags.map(t => (
-                        <span key={t} className="text-[8px] font-bold text-[#ff9f30] bg-[#1c2b3a]/40 border border-[#ff9f30]/20 px-1 rounded-none lowercase">
-                          {t}
+                        <span key={t} className="text-[8px] font-bold text-[#ff9f30] bg-[#1c2b3a]/50 border border-[#ff9f30]/30 px-2 py-0.5 rounded-full lowercase">
+                          #{t}
                         </span>
                       ))}
                     </div>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-[#1c2b3a] group-hover:text-[#ff9f30] transition-colors shrink-0 mt-0.5" />
+                  <ChevronRight className="w-4 h-4 text-[#8b9bb4] group-hover:text-[#ff9f30] group-hover:translate-x-1 transition-all shrink-0 mt-1" />
                 </button>
               ))
             )}

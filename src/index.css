@@ -95,13 +95,34 @@
   color: #f0f0f0;
 }
 
-/* Animations & Keyframes for rich micro-motions */
-@keyframes slideInRight {
-  from {
-    transform: translateX(100%);
+/* Card Deck Swipe Carousel Animations - Smooth 60fps Card Transition */
+@keyframes cardDeckSwipeLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(45px) scale(0.92) rotate(1.5deg);
   }
-  to {
-    transform: translateX(0);
+  60% {
+    opacity: 0.9;
+    transform: translateX(-4px) scale(1.01) rotate(-0.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes cardDeckSwipeRight {
+  0% {
+    opacity: 0;
+    transform: translateX(-45px) scale(0.92) rotate(-1.5deg);
+  }
+  60% {
+    opacity: 0.9;
+    transform: translateX(4px) scale(1.01) rotate(0.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1) rotate(0deg);
   }
 }
 
@@ -113,28 +134,6 @@
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes slideLeft {
-  from {
-    opacity: 0;
-    transform: translateX(30px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-  }
-}
-
-@keyframes slideRight {
-  from {
-    opacity: 0;
-    transform: translateX(-30px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0) scale(1);
   }
 }
 
@@ -182,20 +181,18 @@
   }
 }
 
-.animate-slide-in-right {
-  animation: slideInRight 0.2s ease-out forwards;
+.animate-card-deck-left {
+  animation: cardDeckSwipeLeft 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-card-deck-right {
+  animation: cardDeckSwipeRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
 }
 
 .animate-fade-slide-up {
   animation: fadeSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-slide-left {
-  animation: slideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-slide-right {
-  animation: slideRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-icon-pop {
@@ -243,35 +240,6 @@
     padding-left: 5.5rem !important;
     padding-bottom: 1.5rem !important;
   }
-}
-
-/* Manual Landscape Mode Override & CSS Rules */
-.force-landscape {
-  flex-direction: row !important;
-}
-
-.force-landscape .cyber-nav-dock-responsive,
-.force-landscape .cyber-nav-dock {
-  top: 0 !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: auto !important;
-  width: 4.5rem !important;
-  height: 100% !important;
-  flex-direction: column !important;
-  border-top: 0 !important;
-  border-top-left-radius: 0 !important;
-  border-top-right-radius: 0 !important;
-  border-right: 2px solid #ff9f30 !important;
-  box-shadow: 6px 0 25px rgba(255, 159, 48, 0.2), inset 1px 0 0 rgba(255, 159, 48, 0.4) !important;
-  justify-content: center !important;
-  padding-top: 0.5rem !important;
-  padding-bottom: 0.5rem !important;
-}
-
-.force-landscape .app-workspace-landscape {
-  padding-left: 5.5rem !important;
-  padding-bottom: 1.5rem !important;
 }
 
 .shimmer-bar {

@@ -169,13 +169,68 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, pin }) => {
   }).toUpperCase();
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 animate-fade-slide-up">
+      {/* Quick Access Module Hub (5 Fitur Utama) */}
+      <div className="bg-[#0b1623] border border-[#1c2b3a] p-4 rounded-2xl space-y-3 shadow-lg">
+        <div className="flex justify-between items-center text-[9px] font-bold text-[#ff9f30] uppercase tracking-widest border-b border-[#1c2b3a] pb-2">
+          <span>// QUICK ACCESS: 5 MODULE FITUR UTAMA</span>
+          <span className="text-[#00ff9d]">{dateFormatted}</span>
+        </div>
+
+        <div className="grid grid-cols-5 gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab('dashboard')}
+            className="p-2.5 bg-[#ff9f30]/15 border border-[#ff9f30] text-[#ff9f30] rounded-xl flex flex-col items-center justify-center gap-1 hover:scale-105 transition-all cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span className="text-[7.5px] font-extrabold tracking-wider uppercase">CORE</span>
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => setActiveTab('habits')}
+            className="p-2.5 bg-[#1c2b3a]/30 border border-[#1c2b3a] hover:border-[#ff9f30] text-[#8b9bb4] hover:text-[#ff9f30] rounded-xl flex flex-col items-center justify-center gap-1 hover:scale-105 transition-all cursor-pointer"
+          >
+            <Flame className="w-4 h-4 text-[#ff9f30]" />
+            <span className="text-[7.5px] font-extrabold tracking-wider uppercase">HABITS</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('calendar')}
+            className="p-2.5 bg-[#1c2b3a]/30 border border-[#1c2b3a] hover:border-[#ff9f30] text-[#8b9bb4] hover:text-[#ff9f30] rounded-xl flex flex-col items-center justify-center gap-1 hover:scale-105 transition-all cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-[#ff9f30]" />
+            <span className="text-[7.5px] font-extrabold tracking-wider uppercase">CALENDAR</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('notes')}
+            className="p-2.5 bg-[#1c2b3a]/30 border border-[#1c2b3a] hover:border-[#ff9f30] text-[#8b9bb4] hover:text-[#ff9f30] rounded-xl flex flex-col items-center justify-center gap-1 hover:scale-105 transition-all cursor-pointer"
+          >
+            <BookOpen className="w-4 h-4 text-[#00ff9d]" />
+            <span className="text-[7.5px] font-extrabold tracking-wider uppercase">NOTES</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('needs')}
+            className="p-2.5 bg-[#1c2b3a]/30 border border-[#1c2b3a] hover:border-[#ff9f30] text-[#8b9bb4] hover:text-[#ff9f30] rounded-xl flex flex-col items-center justify-center gap-1 hover:scale-105 transition-all cursor-pointer"
+          >
+            <ShoppingBag className="w-4 h-4 text-[#00ff9d]" />
+            <span className="text-[7.5px] font-extrabold tracking-wider uppercase">FINANCE</span>
+          </button>
+        </div>
+      </div>
+
       {/* Terminal Title Bar */}
-      <div className="border border-[#1c2b3a] bg-[#0b1623] p-4 relative shadow-lg">
+      <div className="border border-[#1c2b3a] bg-[#0b1623] p-4 rounded-2xl relative shadow-lg">
         <div className="flex flex-col gap-1">
           <div className="flex justify-between items-center text-[9px] font-bold text-[#8b9bb4]">
             <span>// UNIT: CORE_STATISTICS</span>
-            <span>{dateFormatted}</span>
+            <span>SYSTEM HEALTH // 100%</span>
           </div>
           <h2 className="text-base font-bold text-[#f0f0f0] tracking-wider mt-1 flex items-center justify-between">
             <span>TERMINAL STATUS: <span className="text-[#00ff9d] animate-pulse">ONLINE</span></span>

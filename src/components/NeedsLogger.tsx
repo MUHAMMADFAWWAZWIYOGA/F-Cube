@@ -1,7 +1,25 @@
 import React, { useState, useMemo } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Plus, Trash2, Link, ShoppingBag, ArrowUpDown, HelpCircle, CheckCircle, Eye } from 'lucide-react';
+import { 
+  BarChart3, 
+  Plus, 
+  Trash2, 
+  Wallet, 
+  ArrowUpRight, 
+  ArrowDownRight, 
+  ShoppingBag
+} from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
+
+export interface FinancialRecord {
+  id: string;
+  title: string;
+  type: 'income' | 'expense';
+  amount: number;
+  category: string;
+  dateStr: string; // YYYY-MM-DD
+  notes: string;
+}
 
 export interface NeedItem {
   id: string;
@@ -22,507 +40,659 @@ interface NeedsLoggerProps {
 }
 
 export const NeedsLogger: React.FC<NeedsLoggerProps> = ({ pin, addSystemLog }) => {
+  // Sync financial records & inventory wishlist in encrypted local storage
+  const [finances, setFinances] = useLocalStorage<FinancialRecord[]>('my-monitor-finances', [
+    {
+      id: 'init-inc-1',
+      title: 'Monthly Income / Freelance Project',
+      type: 'income',
+      amount: 4500000,
+      category: 'Income',
+      dateStr: new Date().toISOString().slice(0, 10),
+      notes: 'Initial monthly budget deposit'
+    },
+    {
+      id: 'init-exp-1',
+      title: 'Hosting & Domain Subscription',
+      type: 'expense',
+      amount: 250000,
+      category: 'Subscriptions',
+      dateStr: new Date().toISOString().slice(0, 10),
+      notes: 'Server infrastructure'
+    }
+  ], pin);
+
   const [items, setItems] = useLocalStorage<NeedItem[]>('my-monitor-needs', [], pin);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  
+  // Deletion modals state
+  const [deleteFinanceId, setDeleteFinanceId] = useState<string | null>(null);
+  const [deleteNeedId, setDeleteNeedId] = useState<string | null>(null);
 
-  // Form states
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [name, setName] = useState('');
-  const [category, setCategory] = useState('Hardware');
-  const [qty, setQty] = useState(1);
-  const [estimatedCost, setEstimatedCost] = useState(0);
-  const [link, setLink] = useState('');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('medium');
-  const [status, setStatus] = useState<'needed' | 'purchased' | 'researched'>('needed');
-  const [notes, setNotes] = useState('');
+  // Active Sub-Tab view: 'finances' or 'wishlist'
+  const [viewTab, setViewTab] = useState<'finances' | 'wishlist'>('finances');
 
-  // Filters & Sorting
-  const [filterCategory, setFilterCategory] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterPriority, setFilterPriority] = useState('all');
-  const [sortBy, setSortBy] = useState<'name' | 'cost' | 'priority'>('name');
+  // Form states for Financial Record Creation
+  const [showFinForm, setShowFinForm] = useState(false);
+  const [finTitle, setFinTitle] = useState('');
+  const [finType, setFinType] = useState<'income' | 'expense'>('expense');
+  const [finAmount, setFinAmount] = useState<number>(0);
+  const [finCategory, setFinCategory] = useState('General');
+  const [finNotes, setFinNotes] = useState('');
 
-  const categories = ['Hardware', 'Software', 'Tool', 'Subscription', 'Service', 'Other'];
+  // Form states for Wishlist Needs
+  const [showNeedForm, setShowNeedForm] = useState(false);
+  const [needName, setNeedName] = useState('');
+  const [needCategory, setNeedCategory] = useState('Hardware');
+  const [needCost, setNeedCost] = useState(0);
+  const [needLink, setNeedLink] = useState('');
 
-  const handleAddItem = (e: React.FormEvent) => {
+  // Filter state
+  const [finFilter, setFinFilter] = useState<'all' | 'income' | 'expense'>('all');
+
+  const finCategories = ['Income', 'Hardware', 'Software', 'Subscriptions', 'Food & Daily', 'Utilities', 'General'];
+  const needCategories = ['Hardware', 'Software', 'Tool', 'Subscription', 'Service', 'Other'];
+
+  // Financial calculations
+  const totalIncome = useMemo(() => {
+    return finances
+      .filter(f => f.type === 'income')
+      .reduce((sum, f) => sum + f.amount, 0);
+  }, [finances]);
+
+  const totalExpense = useMemo(() => {
+    return finances
+      .filter(f => f.type === 'expense')
+      .reduce((sum, f) => sum + f.amount, 0);
+  }, [finances]);
+
+  const netBalance = totalIncome - totalExpense;
+
+  const totalNeedsCost = useMemo(() => {
+    return items
+      .filter(i => i.status === 'needed')
+      .reduce((sum, i) => sum + (i.estimatedCost * i.qty), 0);
+  }, [items]);
+
+  // Category breakdown for Expense Chart
+  const expenseByCategory = useMemo(() => {
+    const map: { [cat: string]: number } = {};
+    finances.filter(f => f.type === 'expense').forEach(f => {
+      map[f.category] = (map[f.category] || 0) + f.amount;
+    });
+    return map;
+  }, [finances]);
+
+  // Handle Add Financial Record
+  const handleAddFinance = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!finTitle.trim() || finAmount <= 0) return;
+
+    const newRecord: FinancialRecord = {
+      id: crypto.randomUUID(),
+      title: finTitle.trim(),
+      type: finType,
+      amount: finAmount,
+      category: finCategory,
+      dateStr: new Date().toISOString().slice(0, 10),
+      notes: finNotes.trim()
+    };
+
+    setFinances([newRecord, ...finances]);
+    if (addSystemLog) {
+      addSystemLog(
+        'TRANSAKSI CATAT',
+        `${finType === 'income' ? 'Pemasukan' : 'Pengeluaran'} "Rp ${finAmount.toLocaleString('id-ID')}" (${finTitle}) berhasil dicatat.`,
+        finType === 'income' ? 'success' : 'alert'
+      );
+    }
+
+    setFinTitle('');
+    setFinAmount(0);
+    setFinNotes('');
+    setShowFinForm(false);
+  };
+
+  // Handle Delete Financial Record
+  const confirmDeleteFinance = () => {
+    if (!deleteFinanceId) return;
+    const target = finances.find(f => f.id === deleteFinanceId);
+    setFinances(finances.filter(f => f.id !== deleteFinanceId));
+    if (addSystemLog && target) {
+      addSystemLog('TRANSAKSI DIHAPUS', `Catatan transaksi "${target.title}" telah dihapus.`, 'alert');
+    }
+    setDeleteFinanceId(null);
+  };
+
+  // Handle Add Need Wishlist Item
+  const handleAddNeed = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!needName.trim()) return;
 
     const newItem: NeedItem = {
       id: crypto.randomUUID(),
-      name: name.trim(),
-      category,
-      qty: Math.max(1, qty),
-      estimatedCost: Math.max(0, estimatedCost),
-      link: link.trim(),
-      priority,
-      status,
-      notes: notes.trim(),
-      updatedAt: new Date().toISOString(),
+      name: needName.trim(),
+      category: needCategory,
+      qty: 1,
+      estimatedCost: Math.max(0, needCost),
+      link: needLink.trim(),
+      priority: 'medium',
+      status: 'needed',
+      notes: '',
+      updatedAt: new Date().toISOString()
     };
 
-    setItems([...items, newItem]);
+    setItems([newItem, ...items]);
     if (addSystemLog) {
-      addSystemLog(
-        'INVENTARIS DITAMBAHKAN',
-        `Item "${newItem.name}" (${category}) dicatat ke daftar kebutuhan.`,
-        'success'
-      );
+      addSystemLog('KEBUTUHAN DITAMBAHKAN', `Item wishlist "${newItem.name}" dicatat.`, 'success');
     }
-    
-    // Reset form
-    setName('');
-    setCategory('Hardware');
-    setQty(1);
-    setEstimatedCost(0);
-    setLink('');
-    setPriority('medium');
-    setStatus('needed');
-    setNotes('');
-    setShowAddForm(false);
+
+    setNeedName('');
+    setNeedCost(0);
+    setNeedLink('');
+    setShowNeedForm(false);
   };
 
-  const handleDeleteItem = (id: string) => {
-    setDeleteConfirmId(id);
-  };
-
-  const confirmDeleteItem = () => {
-    if (!deleteConfirmId) return;
-    const target = items.find(item => item.id === deleteConfirmId);
-    setItems(items.filter(item => item.id !== deleteConfirmId));
+  // Handle Delete Need Wishlist Item
+  const confirmDeleteNeed = () => {
+    if (!deleteNeedId) return;
+    const target = items.find(i => i.id === deleteNeedId);
+    setItems(items.filter(i => i.id !== deleteNeedId));
     if (addSystemLog && target) {
-      addSystemLog(
-        'INVENTARIS DIHAPUS',
-        `Item "${target.name}" telah dihapus dari inventaris.`,
-        'alert'
-      );
+      addSystemLog('INVENTARIS DIHAPUS', `Item "${target?.name}" dihapus dari daftar kebutuhan.`, 'alert');
     }
-    setDeleteConfirmId(null);
+    setDeleteNeedId(null);
   };
 
-  const cycleStatus = (id: string) => {
-    const statusCycle: ('needed' | 'researched' | 'purchased')[] = ['needed', 'researched', 'purchased'];
-    const updated = items.map(item => {
-      if (item.id === id) {
-        const nextIndex = (statusCycle.indexOf(item.status) + 1) % statusCycle.length;
-        return {
-          ...item,
-          status: statusCycle[nextIndex],
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return item;
-    });
-    setItems(updated);
-  };
-
-  // Calculate costs
-  const summaryStats = useMemo(() => {
-    let neededTotal = 0;
-    let purchasedTotal = 0;
-    let totalItemsCount = items.length;
-    let neededCount = 0;
-    let purchasedCount = 0;
-
-    items.forEach(item => {
-      const itemCost = item.estimatedCost * item.qty;
-      if (item.status === 'purchased') {
-        purchasedTotal += itemCost;
-        purchasedCount++;
-      } else {
-        neededTotal += itemCost;
-        if (item.status === 'needed') {
-          neededCount++;
-        }
-      }
-    });
-
-    return {
-      neededTotal,
-      purchasedTotal,
-      totalItemsCount,
-      neededCount,
-      purchasedCount
-    };
-  }, [items]);
-
-  const priorityWeight = { high: 3, medium: 2, low: 1 };
-
-  // Filter & Sort items
-  const processedItems = useMemo(() => {
-    return items
-      .filter(item => {
-        const matchesCategory = filterCategory === 'all' || item.category === filterCategory;
-        const matchesStatus = filterStatus === 'all' || item.status === filterStatus;
-        const matchesPriority = filterPriority === 'all' || item.priority === filterPriority;
-        return matchesCategory && matchesStatus && matchesPriority;
-      })
-      .sort((a, b) => {
-        if (sortBy === 'name') {
-          return a.name.localeCompare(b.name);
-        }
-        if (sortBy === 'cost') {
-          return (b.estimatedCost * b.qty) - (a.estimatedCost * a.qty);
-        }
-        if (sortBy === 'priority') {
-          return priorityWeight[b.priority] - priorityWeight[a.priority];
-        }
-        return 0;
-      });
-  }, [items, filterCategory, filterStatus, filterPriority, sortBy]);
+  const filteredFinances = useMemo(() => {
+    if (finFilter === 'all') return finances;
+    return finances.filter(f => f.type === finFilter);
+  }, [finances, finFilter]);
 
   return (
-    <div className="space-y-4">
-      {/* Title Widget */}
-      <div className="flex justify-between items-center bg-[#0b1623] border border-[#1c2b3a] p-4 text-xs">
+    <div className="space-y-5 animate-fade-slide-up select-none">
+      {/* Top Header Card */}
+      <div className="flex justify-between items-center bg-[#0b1623] border border-[#1c2b3a] p-4 rounded-2xl text-xs">
         <div>
-          <h2 className="font-bold text-[#f0f0f0] tracking-wider uppercase flex items-center gap-1.5">
-            SYS.INVENTORY <ShoppingBag className="w-3.5 h-3.5 text-[#00ff9d]" />
+          <h2 className="font-bold text-[#f0f0f0] tracking-wider uppercase flex items-center gap-2">
+            SYS.FINANCE & RESOURCES <Wallet className="w-4 h-4 text-[#ff9f30]" />
           </h2>
-          <p className="text-[#8b9bb4] text-[9px] mt-0.5 uppercase">RESOURCE & NEEDS LOGGER</p>
+          <p className="text-[#8b9bb4] text-[9px] mt-0.5 uppercase">Pencatatan Keuangan, Visual Chart, & Inventory</p>
         </div>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="flex items-center space-x-1 bg-[#ff9f30] text-[#0b1623] px-2.5 py-1.5 font-bold text-[10px] tracking-wide"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>ADD NEW</span>
-        </button>
-      </div>
-
-      {/* Summary widgets */}
-      <div className="grid grid-cols-3 gap-2.5">
-        <div className="app-card p-3 flex flex-col justify-between">
-          <span className="text-[7px] text-[#8b9bb4] font-bold uppercase tracking-wider block">PENDING BUDGET</span>
-          <h3 className="text-xs font-bold text-[#ff9f30] mt-1">
-            Rp {summaryStats.neededTotal.toLocaleString('id-ID')}
-          </h3>
-          <span className="text-[8px] text-[#8b9bb4] mt-1 block">{summaryStats.neededCount} ITEMS</span>
-        </div>
-
-        <div className="app-card p-3 flex flex-col justify-between">
-          <span className="text-[7px] text-[#8b9bb4] font-bold uppercase tracking-wider block">ACQUIRED/SPENT</span>
-          <h3 className="text-xs font-bold text-[#00ff9d] mt-1">
-            Rp {summaryStats.purchasedTotal.toLocaleString('id-ID')}
-          </h3>
-          <span className="text-[8px] text-[#8b9bb4] mt-1 block">{summaryStats.purchasedCount} ITEMS</span>
-        </div>
-
-        <div className="app-card p-3 flex flex-col justify-between">
-          <span className="text-[7px] text-[#8b9bb4] font-bold uppercase tracking-wider block">TOTAL ITEMS</span>
-          <h3 className="text-xs font-bold text-[#f0f0f0] mt-1">
-            {summaryStats.totalItemsCount}
-          </h3>
-          <span className="text-[8px] text-[#8b9bb4] mt-1 block">LOG ENTRIES</span>
+        
+        {/* Tab Switcher Buttons */}
+        <div className="flex items-center bg-[#1c2b3a]/40 p-1 border border-[#1c2b3a] rounded-xl">
+          <button
+            type="button"
+            onClick={() => setViewTab('finances')}
+            className={`px-3 py-1 text-[9px] font-bold tracking-wider uppercase transition-all rounded-lg cursor-pointer ${
+              viewTab === 'finances'
+                ? 'bg-[#ff9f30] text-[#0b1623] shadow-md'
+                : 'text-[#8b9bb4] hover:text-white'
+            }`}
+          >
+            PENCATATAN KEUANGAN
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewTab('wishlist')}
+            className={`px-3 py-1 text-[9px] font-bold tracking-wider uppercase transition-all rounded-lg cursor-pointer ${
+              viewTab === 'wishlist'
+                ? 'bg-[#ff9f30] text-[#0b1623] shadow-md'
+                : 'text-[#8b9bb4] hover:text-white'
+            }`}
+          >
+            KEBUTUHAN ({items.length})
+          </button>
         </div>
       </div>
 
-      {/* Form Drawer */}
-      {showAddForm && (
-        <form onSubmit={handleAddItem} className="bg-[#0b1623] border border-[#1c2b3a] p-4 space-y-3.5 animate-fadeIn text-xs">
-          <div className="space-y-1.5">
-            <label className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-wider block">Item Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="E.g., Keyboard, Vercel Pro Plan"
-              className="w-full bg-[#0b1623] text-[#f0f0f0] px-3 py-2 border border-[#1c2b3a] focus:outline-none focus:border-[#ff9f30] text-xs"
-              required
-            />
+      {/* Financial Summary Stat Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+        <div className="app-card p-4 rounded-2xl space-y-1">
+          <div className="flex justify-between items-center text-[8px] font-bold text-[#8b9bb4] uppercase tracking-wider">
+            <span>PEMASUKAN / INCOME</span>
+            <ArrowUpRight className="w-3.5 h-3.5 text-[#00ff9d]" />
+          </div>
+          <p className="text-base font-extrabold text-[#00ff9d] truncate">
+            Rp {totalIncome.toLocaleString('id-ID')}
+          </p>
+          <p className="text-[7.5px] text-[#8b9bb4]">Total kredit masuk</p>
+        </div>
+
+        <div className="app-card p-4 rounded-2xl space-y-1">
+          <div className="flex justify-between items-center text-[8px] font-bold text-[#8b9bb4] uppercase tracking-wider">
+            <span>PENGELUARAN / EXPENSE</span>
+            <ArrowDownRight className="w-3.5 h-3.5 text-[#ff9f30]" />
+          </div>
+          <p className="text-base font-extrabold text-[#ff9f30] truncate">
+            Rp {totalExpense.toLocaleString('id-ID')}
+          </p>
+          <p className="text-[7.5px] text-[#8b9bb4]">Total debet keluar</p>
+        </div>
+
+        <div className="app-card p-4 rounded-2xl space-y-1">
+          <div className="flex justify-between items-center text-[8px] font-bold text-[#8b9bb4] uppercase tracking-wider">
+            <span>SALDO NETTO</span>
+            <Wallet className="w-3.5 h-3.5 text-[#f0f0f0]" />
+          </div>
+          <p className={`text-base font-extrabold truncate ${netBalance >= 0 ? 'text-[#00ff9d]' : 'text-red-400'}`}>
+            Rp {netBalance.toLocaleString('id-ID')}
+          </p>
+          <p className="text-[7.5px] text-[#8b9bb4]">Keseimbangan saldo</p>
+        </div>
+
+        <div className="app-card p-4 rounded-2xl space-y-1">
+          <div className="flex justify-between items-center text-[8px] font-bold text-[#8b9bb4] uppercase tracking-wider">
+            <span>ESTIMASI KEBUTUHAN</span>
+            <ShoppingBag className="w-3.5 h-3.5 text-[#ff9f30]" />
+          </div>
+          <p className="text-base font-extrabold text-[#f0f0f0] truncate">
+            Rp {totalNeedsCost.toLocaleString('id-ID')}
+          </p>
+          <p className="text-[7.5px] text-[#8b9bb4]">Biaya wishlist item</p>
+        </div>
+      </div>
+
+      {/* Main Tab View 1: PENCATATAN KEUANGAN & GRAFIK CHART */}
+      {viewTab === 'finances' && (
+        <div className="space-y-5">
+          {/* Cyber Financial Analytics Chart Component */}
+          <div className="app-card p-5 rounded-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-[#1c2b3a] pb-3 text-xs">
+              <span className="font-bold text-[#f0f0f0] tracking-wider uppercase flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-[#00ff9d]" />
+                // GRAFIK CASHFLOW & PROPORSI PENGELUARAN
+              </span>
+              <span className="text-[9px] font-mono text-[#00ff9d] bg-[#00ff9d]/10 px-2.5 py-0.5 rounded-full border border-[#00ff9d]/30">
+                LIVE ANALYTICS CHART
+              </span>
+            </div>
+
+            {/* Income vs Expense Bar Chart Visual */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+              {/* Cashflow Comparison Bar Chart */}
+              <div className="space-y-3 bg-[#1c2b3a]/15 p-4 rounded-xl border border-[#1c2b3a]">
+                <h4 className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-widest flex items-center justify-between">
+                  <span>PEMASUKAN vs PENGELUARAN</span>
+                  <span className="text-[#00ff9d]">
+                    {totalIncome > 0 ? Math.round((totalExpense / totalIncome) * 100) : 0}% EXPENSE RATIO
+                  </span>
+                </h4>
+
+                <div className="space-y-2.5">
+                  {/* Income bar */}
+                  <div>
+                    <div className="flex justify-between text-[9px] font-bold mb-1">
+                      <span className="text-[#00ff9d]">INCOME (+)</span>
+                      <span>Rp {totalIncome.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="w-full h-3.5 bg-[#1c2b3a] rounded-full overflow-hidden border border-[#1c2b3a]">
+                      <div 
+                        className="h-full bg-gradient-to-r from-[#00ff9d]/60 to-[#00ff9d] rounded-full transition-all duration-500 shadow-[0_0_10px_#00ff9d]"
+                        style={{ width: `${totalIncome > 0 ? 100 : 0}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Expense bar */}
+                  <div>
+                    <div className="flex justify-between text-[9px] font-bold mb-1">
+                      <span className="text-[#ff9f30]">EXPENSE (-)</span>
+                      <span>Rp {totalExpense.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="w-full h-3.5 bg-[#1c2b3a] rounded-full overflow-hidden border border-[#1c2b3a]">
+                      <div 
+                        className="h-full bg-gradient-to-r from-[#ff9f30]/60 to-[#ff9f30] rounded-full transition-all duration-500 shadow-[0_0_10px_#ff9f30]"
+                        style={{ width: `${totalIncome > 0 ? Math.min(100, Math.round((totalExpense / totalIncome) * 100)) : 0}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Expense Category Breakdown */}
+              <div className="space-y-2.5 bg-[#1c2b3a]/15 p-4 rounded-xl border border-[#1c2b3a]">
+                <h4 className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-widest">
+                  BREAKDOWN KATEGORI PENGELUARAN
+                </h4>
+
+                {Object.keys(expenseByCategory).length === 0 ? (
+                  <p className="text-[9px] text-[#8b9bb4] italic py-2">Belum ada pengeluaran dicatat.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {Object.entries(expenseByCategory).map(([cat, amt]) => {
+                      const pct = totalExpense > 0 ? Math.round((amt / totalExpense) * 100) : 0;
+                      return (
+                        <div key={cat} className="space-y-1">
+                          <div className="flex justify-between text-[8px] font-bold">
+                            <span className="text-[#f0f0f0]">{cat}</span>
+                            <span className="text-[#ff9f30]">Rp {amt.toLocaleString('id-ID')} ({pct}%)</span>
+                          </div>
+                          <div className="w-full h-2 bg-[#1c2b3a] rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-[#ff9f30] rounded-full transition-all duration-300"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-wider block">Category</label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full bg-[#0b1623] text-[#f0f0f0] px-3 py-2 border border-[#1c2b3a] focus:outline-none focus:border-[#ff9f30] text-xs uppercase"
+          {/* Transactions List & Form */}
+          <div className="app-card p-5 rounded-2xl space-y-4">
+            <div className="flex justify-between items-center border-b border-[#1c2b3a] pb-3 text-xs">
+              <span className="font-bold text-[#f0f0f0] tracking-wider uppercase flex items-center gap-2">
+                // JURNAL TRANSAKSI KEUANGAN
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowFinForm(!showFinForm)}
+                className="flex items-center gap-1.5 bg-[#ff9f30] text-[#0b1623] hover:bg-[#e68a1f] px-3 py-1 font-bold text-[9px] tracking-wider uppercase rounded-xl transition-all cursor-pointer shadow-md"
               >
-                {categories.map(cat => (
-                  <option key={cat} value={cat}>{cat.toUpperCase()}</option>
-                ))}
-              </select>
+                <Plus className="w-3.5 h-3.5" />
+                <span>TAMBAH TRANSAKSI</span>
+              </button>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-wider block">Quantity</label>
-              <input
-                type="number"
-                min="1"
-                value={qty}
-                onChange={(e) => setQty(parseInt(e.target.value) || 1)}
-                className="w-full bg-[#0b1623] text-[#f0f0f0] px-3 py-2 border border-[#1c2b3a] focus:outline-none focus:border-[#ff9f30] text-xs"
-                required
-              />
-            </div>
-          </div>
+            {/* Form Tambah Transaksi */}
+            {showFinForm && (
+              <form onSubmit={handleAddFinance} className="bg-[#1c2b3a]/30 border border-[#1c2b3a] p-4 rounded-2xl space-y-3.5 animate-fade-slide-up">
+                <div className="flex items-center justify-between border-b border-[#1c2b3a]/60 pb-2 text-[9px] font-bold text-[#ff9f30] uppercase">
+                  <span>CATAT TRANSAKSI KEUANGAN BARU</span>
+                  <button type="button" onClick={() => setShowFinForm(false)} className="text-[#8b9bb4] hover:text-white">✕</button>
+                </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-wider block">Cost per unit (Rp)</label>
-              <input
-                type="number"
-                min="0"
-                value={estimatedCost}
-                onChange={(e) => setEstimatedCost(parseFloat(e.target.value) || 0)}
-                className="w-full bg-[#0b1623] text-[#f0f0f0] px-3 py-2 border border-[#1c2b3a] focus:outline-none focus:border-[#ff9f30] text-xs"
-                required
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-wider block">Priority</label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as any)}
-                className="w-full bg-[#0b1623] text-[#f0f0f0] px-3 py-2 border border-[#1c2b3a] focus:outline-none focus:border-[#ff9f30] text-xs uppercase"
-              >
-                <option value="low">LOW</option>
-                <option value="medium">MEDIUM</option>
-                <option value="high">HIGH</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-wider block">Status</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as any)}
-              className="w-full bg-[#0b1623] text-[#f0f0f0] px-3 py-2 border border-[#1c2b3a] focus:outline-none focus:border-[#ff9f30] text-xs uppercase"
-            >
-              <option value="needed">NEEDED</option>
-              <option value="researched">RESEARCHED</option>
-              <option value="purchased">PURCHASED</option>
-            </select>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-wider block">Reference URL</label>
-            <input
-              type="url"
-              value={link}
-              onChange={(e) => setLink(e.target.value)}
-              placeholder="https://example.com"
-              className="w-full bg-[#0b1623] text-[#f0f0f0] px-3 py-2 border border-[#1c2b3a] focus:outline-none focus:border-[#ff9f30] text-xs"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[9px] font-bold text-[#8b9bb4] uppercase tracking-wider block">Specifications / Notes</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="E.g., Gray color, US layout..."
-              rows={2}
-              className="w-full bg-[#0b1623] text-[#f0f0f0] px-3 py-2 border border-[#1c2b3a] focus:outline-none focus:border-[#ff9f30] text-xs resize-none"
-            />
-          </div>
-
-          <div className="flex justify-end space-x-2 pt-1">
-            <button
-              type="button"
-              onClick={() => setShowAddForm(false)}
-              className="px-3 py-1.5 text-[10px] font-bold text-[#8b9bb4] hover:bg-[#1c2b3a]"
-            >
-              CANCEL
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-1.5 text-[10px] font-bold bg-[#ff9f30] text-[#0b1623]"
-            >
-              LOG ITEM
-            </button>
-          </div>
-        </form>
-      )}
-
-      {/* Filters workspace */}
-      <div className="bg-[#0b1623] border border-[#1c2b3a] p-3.5 space-y-3">
-        <div className="grid grid-cols-3 gap-2">
-          {/* Category Filter */}
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="w-full bg-[#0b1623] border border-[#1c2b3a] px-2 py-1.5 text-[9px] font-bold text-[#8b9bb4] focus:outline-none focus:border-[#ff9f30]"
-          >
-            <option value="all">ALL CATEGORIES</option>
-            {categories.map(cat => (
-              <option key={cat} value={cat}>{cat.toUpperCase()}</option>
-            ))}
-          </select>
-
-          {/* Status Filter */}
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="w-full bg-[#0b1623] border border-[#1c2b3a] px-2 py-1.5 text-[9px] font-bold text-[#8b9bb4] focus:outline-none focus:border-[#ff9f30]"
-          >
-            <option value="all">ALL STATUSES</option>
-            <option value="needed">NEEDED</option>
-            <option value="researched">RESEARCHED</option>
-            <option value="purchased">PURCHASED</option>
-          </select>
-
-          {/* Priority Filter */}
-          <select
-            value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-            className="w-full bg-[#0b1623] border border-[#1c2b3a] px-2 py-1.5 text-[9px] font-bold text-[#8b9bb4] focus:outline-none focus:border-[#ff9f30]"
-          >
-            <option value="all">ALL PRIORITIES</option>
-            <option value="low">LOW</option>
-            <option value="medium">MEDIUM</option>
-            <option value="high">HIGH</option>
-          </select>
-        </div>
-
-        {/* Sorting option */}
-        <div className="flex items-center justify-between gap-2 border-t border-[#1c2b3a]/50 pt-2 text-[9px] font-bold text-[#8b9bb4]">
-          <span className="flex items-center gap-1">
-            <ArrowUpDown className="w-3.5 h-3.5" /> SORT BY:
-          </span>
-          <div className="flex bg-[#1c2b3a]/50 p-0.5 border border-[#1c2b3a]">
-            <button
-              onClick={() => setSortBy('name')}
-              className={`px-2 py-1 text-[8px] font-bold rounded-none transition-all ${
-                sortBy === 'name' ? 'bg-[#ff9f30] text-[#0b1623]' : 'text-[#8b9bb4] hover:text-white'
-              }`}
-            >
-              NAME
-            </button>
-            <button
-              onClick={() => setSortBy('cost')}
-              className={`px-2 py-1 text-[8px] font-bold rounded-none transition-all ${
-                sortBy === 'cost' ? 'bg-[#ff9f30] text-[#0b1623]' : 'text-[#8b9bb4] hover:text-white'
-              }`}
-            >
-              COST
-            </button>
-            <button
-              onClick={() => setSortBy('priority')}
-              className={`px-2 py-1 text-[8px] font-bold rounded-none transition-all ${
-                sortBy === 'priority' ? 'bg-[#ff9f30] text-[#0b1623]' : 'text-[#8b9bb4] hover:text-white'
-              }`}
-            >
-              PRIORITY
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Resource log items */}
-      {processedItems.length === 0 ? (
-        <div className="bg-[#0b1623] border border-[#1c2b3a] p-8 text-center">
-          <ShoppingBag className="w-8 h-8 text-[#1c2b3a] mx-auto mb-1.5" />
-          <p className="text-[#8b9bb4] text-[10px]">NO ITEMS RECORDED IN CATALOG.</p>
-        </div>
-      ) : (
-        <div className="space-y-3.5">
-          {processedItems.map((item) => {
-            const priorityColors = {
-              high: 'bg-[#1c2b3a] text-[#ff9f30] border-[#ff9f30]/40',
-              medium: 'bg-[#1c2b3a]/50 text-[#8b9bb4] border-[#1c2b3a]',
-              low: 'bg-[#0b1623] text-[#8b9bb4] border-[#1c2b3a]'
-            };
-
-            const statusColors = {
-              needed: 'bg-[#ff9f30]/20 text-[#ff9f30] border-[#ff9f30]/40',
-              researched: 'bg-[#1c2b3a] text-[#8b9bb4] border-[#1c2b3a]',
-              purchased: 'bg-[#00ff9d]/20 text-[#00ff9d] border-[#00ff9d]/30'
-            };
-
-            const statusIcons = {
-              needed: HelpCircle,
-              researched: Eye,
-              purchased: CheckCircle
-            };
-
-            const StatusIcon = statusIcons[item.status];
-
-            return (
-              <div key={item.id} className="app-card p-4 flex flex-col justify-between gap-3 text-xs">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2 text-[9px] font-bold">
-                    <span className="text-[#ff9f30] bg-[#1c2b3a]/30 border border-[#1c2b3a] px-1.5 py-0.2">
-                      {item.category.toUpperCase()}
-                    </span>
-                    <div className="flex items-center space-x-1.5">
-                      <span className={`px-1.5 py-0.2 border ${priorityColors[item.priority]}`}>
-                        {item.priority.toUpperCase()}
-                      </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Type Selector */}
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-bold text-[#8b9bb4] uppercase">Tipe Transaksi</label>
+                    <div className="grid grid-cols-2 gap-2">
                       <button
-                        onClick={() => cycleStatus(item.id)}
-                        className={`px-1.5 py-0.2 border flex items-center gap-1 transition-all ${statusColors[item.status]}`}
-                        title="Click to cycle status"
+                        type="button"
+                        onClick={() => setFinType('income')}
+                        className={`py-2 text-[9px] font-bold uppercase rounded-xl border transition-all cursor-pointer ${
+                          finType === 'income' 
+                            ? 'bg-[#00ff9d] text-[#0b1623] border-[#00ff9d]' 
+                            : 'bg-[#1c2b3a]/30 text-[#8b9bb4] border-[#1c2b3a]'
+                        }`}
                       >
-                        <StatusIcon className="w-2.5 h-2.5" />
-                        <span>{item.status.toUpperCase()}</span>
+                        + PEMASUKAN
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFinType('expense')}
+                        className={`py-2 text-[9px] font-bold uppercase rounded-xl border transition-all cursor-pointer ${
+                          finType === 'expense' 
+                            ? 'bg-[#ff9f30] text-[#0b1623] border-[#ff9f30]' 
+                            : 'bg-[#1c2b3a]/30 text-[#8b9bb4] border-[#1c2b3a]'
+                        }`}
+                      >
+                        - PENGELUARAN
                       </button>
                     </div>
                   </div>
 
-                  {/* Title & Quantity */}
-                  <div className="space-y-0.5">
-                    <div className="flex items-baseline space-x-1.5">
-                      <h4 className="font-bold text-[#f0f0f0] text-xs leading-snug">{item.name}</h4>
-                      <span className="text-[#8b9bb4] text-[10px] font-bold">X{item.qty}</span>
-                    </div>
-                    {item.notes && <p className="text-[#8b9bb4] text-[10px] leading-relaxed mt-0.5">{item.notes}</p>}
+                  {/* Category */}
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-bold text-[#8b9bb4] uppercase">Kategori</label>
+                    <select
+                      value={finCategory}
+                      onChange={(e) => setFinCategory(e.target.value)}
+                      className="w-full bg-[#0b1623] border border-[#1c2b3a] p-2 text-xs text-[#f0f0f0] rounded-xl outline-none focus:border-[#ff9f30]"
+                    >
+                      {finCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                    </select>
                   </div>
                 </div>
 
-                {/* Footer details */}
-                <div className="border-t border-[#1c2b3a]/50 pt-2.5 flex items-center justify-between text-[10px]">
-                  <div>
-                    <span className="text-[7px] font-bold text-[#8b9bb4] uppercase block">EST. BUDGET</span>
-                    <h5 className="font-bold text-[#f0f0f0]">
-                      Rp {(item.estimatedCost * item.qty).toLocaleString('id-ID')}
-                      {item.qty > 1 && (
-                        <span className="text-[8px] text-[#8b9bb4] block font-medium mt-0.5">
-                          (Rp {item.estimatedCost.toLocaleString('id-ID')} EACH)
-                        </span>
-                      )}
-                    </h5>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Title */}
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-bold text-[#8b9bb4] uppercase">Nama Transaksi / Deskripsi</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Pembelian Komponen RAM 16GB"
+                      value={finTitle}
+                      onChange={(e) => setFinTitle(e.target.value)}
+                      className="w-full bg-[#0b1623] border border-[#1c2b3a] p-2 text-xs text-[#f0f0f0] rounded-xl outline-none focus:border-[#ff9f30]"
+                      required
+                    />
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    {item.link && (
-                      <a
-                        href={item.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[#8b9bb4] hover:text-[#00ff9d] p-1.5 hover:bg-[#1c2b3a] transition-colors"
-                        title="Open URL"
+                  {/* Amount */}
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-bold text-[#8b9bb4] uppercase">Jumlah Nominal (Rp)</label>
+                    <input
+                      type="number"
+                      placeholder="Nominal angka"
+                      value={finAmount || ''}
+                      onChange={(e) => setFinAmount(Number(e.target.value))}
+                      className="w-full bg-[#0b1623] border border-[#1c2b3a] p-2 text-xs text-[#f0f0f0] rounded-xl outline-none focus:border-[#ff9f30]"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowFinForm(false)}
+                    className="px-3 py-1.5 border border-[#1c2b3a] text-[#8b9bb4] text-[9px] font-bold uppercase rounded-xl hover:text-white"
+                  >
+                    BATAL
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-1.5 bg-[#ff9f30] text-[#0b1623] text-[9px] font-extrabold uppercase rounded-xl hover:bg-[#e68a1f]"
+                  >
+                    SIMPAN TRANSAKSI
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Filter Pills */}
+            <div className="flex items-center gap-2">
+              <span className="text-[8px] font-bold text-[#8b9bb4] uppercase">Filter:</span>
+              {['all', 'income', 'expense'].map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setFinFilter(f as any)}
+                  className={`px-2.5 py-0.5 text-[8px] font-bold uppercase rounded-full border transition-all cursor-pointer ${
+                    finFilter === f
+                      ? 'bg-[#ff9f30] text-[#0b1623] border-[#ff9f30]'
+                      : 'bg-[#1c2b3a]/20 text-[#8b9bb4] border-[#1c2b3a] hover:text-white'
+                  }`}
+                >
+                  {f === 'all' ? 'SEMUA' : f === 'income' ? 'PEMASUKAN (+)' : 'PENGELUARAN (-)'}
+                </button>
+              ))}
+            </div>
+
+            {/* Financial Transactions List */}
+            {filteredFinances.length === 0 ? (
+              <div className="text-center py-8 border border-dashed border-[#1c2b3a] rounded-2xl">
+                <Wallet className="w-6 h-6 text-[#1c2b3a] mx-auto mb-2" />
+                <p className="text-[#8b9bb4] text-[9.5px] uppercase">Belum ada transaksi dalam riwayat.</p>
+              </div>
+            ) : (
+              <div className="space-y-2.5 divide-y divide-[#1c2b3a]/40">
+                {filteredFinances.map((f) => (
+                  <div key={f.id} className="pt-2.5 flex items-center justify-between group">
+                    <div className="flex items-center space-x-3">
+                      <div className={`p-2 border rounded-xl shrink-0 ${
+                        f.type === 'income' 
+                          ? 'bg-[#00ff9d]/10 text-[#00ff9d] border-[#00ff9d]/40' 
+                          : 'bg-[#ff9f30]/10 text-[#ff9f30] border-[#ff9f30]/40'
+                      }`}>
+                        {f.type === 'income' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-xs text-[#f0f0f0] tracking-wide uppercase">{f.title}</h5>
+                        <p className="text-[8px] text-[#8b9bb4] flex items-center gap-2">
+                          <span className="text-[#ff9f30] font-bold">{f.category}</span> • {f.dateStr}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-3">
+                      <span className={`font-mono text-xs font-extrabold ${f.type === 'income' ? 'text-[#00ff9d]' : 'text-[#ff9f30]'}`}>
+                        {f.type === 'income' ? '+' : '-'} Rp {f.amount.toLocaleString('id-ID')}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteFinanceId(f.id)}
+                        className="p-1 text-[#8b9bb4] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        title="Hapus transaksi"
                       >
-                        <Link className="w-3.5 h-3.5" />
-                      </a>
-                    )}
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Main Tab View 2: INVENTORY KEBUTUHAN (WISHLIST ITEMS) */}
+      {viewTab === 'wishlist' && (
+        <div className="app-card p-5 rounded-2xl space-y-4">
+          <div className="flex justify-between items-center border-b border-[#1c2b3a] pb-3 text-xs">
+            <span className="font-bold text-[#f0f0f0] tracking-wider uppercase flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4 text-[#ff9f30]" />
+              // INVENTARIS & DAFTAR KEBUTUHAN
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowNeedForm(!showNeedForm)}
+              className="flex items-center gap-1.5 bg-[#ff9f30] text-[#0b1623] hover:bg-[#e68a1f] px-3 py-1 font-bold text-[9px] tracking-wider uppercase rounded-xl transition-all cursor-pointer shadow-md"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>TAMBAH KEBUTUHAN</span>
+            </button>
+          </div>
+
+          {/* Form Wishlist Need */}
+          {showNeedForm && (
+            <form onSubmit={handleAddNeed} className="bg-[#1c2b3a]/30 border border-[#1c2b3a] p-4 rounded-2xl space-y-3 animate-fade-slide-up">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[8px] font-bold text-[#8b9bb4] uppercase">Nama Barang / Kebutuhan</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. SSD NVMe 1TB"
+                    value={needName}
+                    onChange={(e) => setNeedName(e.target.value)}
+                    className="w-full bg-[#0b1623] border border-[#1c2b3a] p-2 text-xs text-[#f0f0f0] rounded-xl outline-none focus:border-[#ff9f30]"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[8px] font-bold text-[#8b9bb4] uppercase">Kategori Barang</label>
+                  <select
+                    value={needCategory}
+                    onChange={(e) => setNeedCategory(e.target.value)}
+                    className="w-full bg-[#0b1623] border border-[#1c2b3a] p-2 text-xs text-[#f0f0f0] rounded-xl outline-none focus:border-[#ff9f30]"
+                  >
+                    {needCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[8px] font-bold text-[#8b9bb4] uppercase">Estimasi Biaya (Rp)</label>
+                  <input
+                    type="number"
+                    placeholder="Estimasi Rp"
+                    value={needCost || ''}
+                    onChange={(e) => setNeedCost(Number(e.target.value))}
+                    className="w-full bg-[#0b1623] border border-[#1c2b3a] p-2 text-xs text-[#f0f0f0] rounded-xl outline-none focus:border-[#ff9f30]"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowNeedForm(false)}
+                  className="px-3 py-1.5 border border-[#1c2b3a] text-[#8b9bb4] text-[9px] font-bold uppercase rounded-xl"
+                >
+                  BATAL
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 bg-[#ff9f30] text-[#0b1623] text-[9px] font-extrabold uppercase rounded-xl"
+                >
+                  CATAT KEBUTUHAN
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Items List */}
+          {items.length === 0 ? (
+            <div className="text-center py-8 border border-dashed border-[#1c2b3a] rounded-2xl">
+              <ShoppingBag className="w-6 h-6 text-[#1c2b3a] mx-auto mb-2" />
+              <p className="text-[#8b9bb4] text-[9.5px] uppercase">Daftar kebutuhan kosong.</p>
+            </div>
+          ) : (
+            <div className="space-y-2.5 divide-y divide-[#1c2b3a]/40">
+              {items.map((item) => (
+                <div key={item.id} className="pt-2.5 flex items-center justify-between group">
+                  <div>
+                    <h5 className="font-bold text-xs text-[#f0f0f0] tracking-wide uppercase">{item.name}</h5>
+                    <p className="text-[8px] text-[#8b9bb4]">
+                      <span className="text-[#ff9f30] font-bold">{item.category}</span> • Qty: {item.qty}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <span className="font-mono text-xs font-bold text-[#f0f0f0]">
+                      Rp {(item.estimatedCost * item.qty).toLocaleString('id-ID')}
+                    </span>
                     <button
-                      onClick={() => handleDeleteItem(item.id)}
-                      className="text-[#8b9bb4] hover:text-[#ff9f30] p-1.5 hover:bg-[#1c2b3a] transition-colors"
-                      title="Delete"
+                      type="button"
+                      onClick={() => setDeleteNeedId(item.id)}
+                      className="p-1 text-[#8b9bb4] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              ))}
+            </div>
+          )}
         </div>
       )}
 
+      {/* Delete Modals */}
       <ConfirmModal
-        isOpen={!!deleteConfirmId}
-        title="HAPUS INVENTARIS // DELETE ITEM"
-        message="Apakah Anda yakin ingin menghapus item inventaris kebutuhan ini?"
-        onConfirm={confirmDeleteItem}
-        onCancel={() => setDeleteConfirmId(null)}
+        isOpen={!!deleteFinanceId}
+        title="HAPUS CATATAN TRANSAKSI"
+        message="Apakah Anda yakin ingin menghapus catatan transaksi ini dari jurnal keuangan?"
+        confirmText="HAPUS TRANSAKSI"
+        onConfirm={confirmDeleteFinance}
+        onCancel={() => setDeleteFinanceId(null)}
+      />
+
+      <ConfirmModal
+        isOpen={!!deleteNeedId}
+        title="HAPUS KEBUTUHAN WISHLIST"
+        message="Apakah Anda yakin ingin menghapus barang kebutuhan ini dari daftar?"
+        confirmText="HAPUS BARANG"
+        onConfirm={confirmDeleteNeed}
+        onCancel={() => setDeleteNeedId(null)}
       />
     </div>
   );
 };
+
 export default NeedsLogger;
