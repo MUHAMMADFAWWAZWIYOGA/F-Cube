@@ -13,63 +13,74 @@
   --font-sans: 'JetBrains Mono', monospace;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Force sharp 0px corners across all components */
-  --radius-xs: 0px;
-  --radius-sm: 0px;
-  --radius-md: 0px;
-  --radius-lg: 0px;
-  --radius-xl: 0px;
-  --radius-2xl: 0px;
-  --radius-3xl: 0px;
-  --radius-full: 0px;
+  /* Modern rounded corners system */
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-2xl: 26px;
+  --radius-3xl: 32px;
+  --radius-full: 9999px;
 }
 
 @layer base {
   body {
     background-color: #0b1623;
-    /* Drafting grid background lines - subtle industrial theme */
+    /* Drafting grid background lines - soft dark aesthetic */
     background-image: 
-      linear-gradient(to right, rgba(28, 43, 58, 0.4) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(28, 43, 58, 0.4) 1px, transparent 1px);
+      linear-gradient(to right, rgba(28, 43, 58, 0.35) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(28, 43, 58, 0.35) 1px, transparent 1px);
     background-size: 24px 24px;
     @apply text-[#f0f0f0] font-sans antialiased selection:bg-accent/30 selection:text-white overflow-x-hidden;
   }
 
-  /* Completely hide distracting side scrollbars for a clean, non-glaring look */
+  /* Completely hide all scrollbars globally - no jarring side indicators anywhere */
+  html, body, div, main, section, nav, article, aside, ul, li, form, input, textarea {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
   ::-webkit-scrollbar {
     display: none !important;
     width: 0px !important;
     height: 0px !important;
+    background: transparent !important;
   }
-  * {
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-thumb,
+  ::-webkit-scrollbar-corner {
+    display: none !important;
+    background: transparent !important;
+    border: none !important;
   }
 }
 
-/* Custom card & design utilities */
+/* Custom card & design utilities with soft rounded corners */
 .glass-panel {
   background: #0b1623;
   border: 1px solid #1c2b3a;
+  border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .app-card {
   background: #0b1623;
   border: 1px solid #1c2b3a;
+  border-radius: 16px;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .app-card:hover {
-  border-color: rgba(255, 159, 48, 0.7);
-  box-shadow: 0 6px 24px rgba(255, 159, 48, 0.1);
+  border-color: rgba(255, 159, 48, 0.6);
+  box-shadow: 0 8px 28px rgba(255, 159, 48, 0.12);
+  transform: translateY(-2px);
 }
 
 .gradient-text {
   color: #f0f0f0;
 }
 
-/* Animations & Keyframes */
+/* Animations & Keyframes for rich micro-motions */
 @keyframes slideInRight {
   from {
     transform: translateX(100%);
@@ -82,7 +93,7 @@
 @keyframes fadeSlideUp {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.99);
+    transform: translateY(14px) scale(0.98);
   }
   to {
     opacity: 1;
@@ -114,10 +125,10 @@
 
 @keyframes iconPop {
   0% {
-    transform: scale(0.9);
+    transform: scale(0.88);
   }
   50% {
-    transform: scale(1.12);
+    transform: scale(1.15);
   }
   100% {
     transform: scale(1);
@@ -127,7 +138,7 @@
 @keyframes toastSlideIn {
   from {
     opacity: 0;
-    transform: translate(-50%, -15px) scale(0.95);
+    transform: translate(-50%, -15px) scale(0.92);
   }
   to {
     opacity: 1;
@@ -135,14 +146,15 @@
   }
 }
 
-@keyframes neonGlowPulse {
-  0%, 100% {
-    box-shadow: 0 -4px 20px rgba(255, 159, 48, 0.2), inset 0 1px 0 rgba(255, 159, 48, 0.4);
-    border-color: rgba(255, 159, 48, 0.7);
+@keyframes keyPressPop {
+  0% {
+    transform: scale(1);
   }
   50% {
-    box-shadow: 0 -4px 30px rgba(255, 159, 48, 0.35), inset 0 1px 0 rgba(0, 255, 157, 0.4);
-    border-color: rgba(0, 255, 157, 0.7);
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 
@@ -160,15 +172,15 @@
 }
 
 .animate-fade-slide-up {
-  animation: fadeSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-slide-left {
-  animation: slideLeft 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-slide-right {
-  animation: slideRight 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideRight 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-icon-pop {
@@ -179,9 +191,15 @@
   animation: toastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+.animate-key-pop {
+  animation: keyPressPop 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .cyber-nav-dock {
   background: linear-gradient(180deg, rgba(15, 28, 44, 0.98) 0%, rgba(11, 22, 35, 0.99) 100%);
   border-top: 2px solid #ff9f30;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
   box-shadow: 0 -6px 25px rgba(255, 159, 48, 0.2), inset 0 1px 0 rgba(255, 159, 48, 0.4);
   backdrop-filter: blur(12px);
   transition: all 0.3s ease-in-out;
@@ -197,6 +215,8 @@
     height: 100% !important;
     flex-direction: column !important;
     border-top: 0 !important;
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
     border-right: 2px solid #ff9f30 !important;
     box-shadow: 6px 0 25px rgba(255, 159, 48, 0.2), inset 1px 0 0 rgba(255, 159, 48, 0.4) !important;
     justify-content: center !important;
@@ -220,5 +240,6 @@
 .mobile-device-shell {
   background: #0b1623;
   border: 4px double #1c2b3a;
+  border-radius: 24px;
   box-shadow: 0 0 40px rgba(0, 255, 157, 0.05);
 }
