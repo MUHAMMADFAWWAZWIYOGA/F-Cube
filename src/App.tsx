@@ -126,6 +126,55 @@ function App() {
   // Active Tab View State
   const [activeTab, setActiveTab] = useState<string>('dashboard');
 
+  // Swipe Navigation Handler for Touch Devices
+  const TABS = ['dashboard', 'habits', 'calendar', 'notes', 'needs'];
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
+  const [slideAnim, setSlideAnim] = useState<'left' | 'right' | 'up'>('up');
+  const [swipeToast, setSwipeToast] = useState<string | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart({
+      x: e.targetTouches[0].clientX,
+      y: e.targetTouches[0].clientY
+    });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd({
+      x: e.targetTouches[0].clientX,
+      y: e.targetTouches[0].clientY
+    });
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distanceX = touchStart.x - touchEnd.x;
+    const distanceY = touchStart.y - touchEnd.y;
+    const isHorizontalSwipe = Math.abs(distanceX) > Math.abs(distanceY) * 1.2;
+
+    if (isHorizontalSwipe && Math.abs(distanceX) > 40) {
+      const currentIndex = TABS.indexOf(activeTab);
+      if (distanceX > 40) {
+        // Swiped LEFT (finger right -> left) => Next Tab
+        const nextIndex = (currentIndex + 1) % TABS.length;
+        const nextTab = TABS[nextIndex];
+        setActiveTab(nextTab);
+        setSlideAnim('left');
+        setSwipeToast(`NAVIGATING >> ${nextTab.toUpperCase()}`);
+      } else if (distanceX < -40) {
+        // Swiped RIGHT (finger left -> right) => Previous Tab
+        const prevIndex = (currentIndex - 1 + TABS.length) % TABS.length;
+        const prevTab = TABS[prevIndex];
+        setActiveTab(prevTab);
+        setSlideAnim('right');
+        setSwipeToast(`NAVIGATING << ${prevTab.toUpperCase()}`);
+      }
+      setTimeout(() => setSwipeToast(null), 1200);
+    }
+  };
+
   // Encrypted LocalStorage states (synced using the session PIN key)
   const [notifications, setNotifications] = useLocalStorage<NotificationItem[]>('my-monitor-notifications', [
     {
@@ -613,11 +662,11 @@ function App() {
 
   // 2. Render App Shell if unlocked
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-transparent py-0 md:py-8">
-      <div className="w-full max-w-md h-screen md:h-[820px] bg-[#0b1623] text-[#f0f0f0] flex flex-col relative overflow-hidden md:border-2 md:border-[#1c2b3a] md:shadow-2xl">
+    <div className="min-h-screen w-full flex items-center justify-center bg-transparent py-0 md:py-6 px-0 md:px-4">
+      <div className="w-full max-w-md sm:max-w-xl md:max-w-4xl lg:max-w-6xl h-screen md:h-[90vh] md:max-h-[920px] bg-[#0b1623] text-[#f0f0f0] flex flex-col relative overflow-hidden md:border-2 md:border-[#1c2b3a] md:shadow-2xl transition-all duration-300">
         
         {/* Top Header Bar */}
-        <header className="bg-[#0b1623] border-b border-[#1c2b3a] px-5 py-4 flex items-center justify-between shrink-0">
+        <header className="bg-[#0b1623] border-b border-[#1c2b3a] px-5 py-3.5 flex items-center justify-between shrink-0 z-10">
           <div className="flex items-center space-x-2">
             <span className="text-[#f0f0f0] font-bold text-[10px] tracking-wider select-none">
               SYS.MONITOR // ALPHA
@@ -634,7 +683,7 @@ function App() {
             {/* Lock Button */}
             <button
               onClick={handleLock}
-              className="p-1 border border-[#1c2b3a] bg-[#1c2b3a]/30 hover:border-[#ff9f30] text-[#8b9bb4] hover:text-[#ff9f30] transition-colors flex items-center justify-center gap-1 px-2 py-0.5 text-[8px] font-bold"
+              className="p-1 border border-[#1c2b3a] bg-[#1c2b3a]/30 hover:border-[#ff9f30] text-[#8b9bb4] hover:text-[#ff9f30] transition-colors flex items-center justify-center gap-1 px-2 py-0.5 text-[8px] font-bold cursor-pointer"
               title="Lock Terminal"
             >
               <Lock className="w-3 h-3 text-[#ff9f30]" />
@@ -648,7 +697,7 @@ function App() {
                 setShowDrawer(true);
                 handleMarkAllRead();
               }}
-              className="p-1 text-[#8b9bb4] hover:text-[#ff9f30] transition-colors relative"
+              className="p-1 text-[#8b9bb4] hover:text-[#ff9f30] transition-colors relative cursor-pointer"
             >
               <Bell className="w-4.5 h-4.5" />
               {unreadCount > 0 && (
@@ -658,14 +707,35 @@ function App() {
           </div>
         </header>
 
-        {/* Content View Workspace */}
-        <main className="flex-1 overflow-y-auto p-4 pb-24 relative">
-          <div key={activeTab} className="animate-fade-slide-up">
+        {/* Content View Workspace with Touch Swipe Gesture Support */}
+        <main 
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className="flex-1 overflow-y-auto p-4 pb-24 relative touch-pan-y"
+        >
+          {/* Floating Swipe Feedback Toast */}
+          {swipeToast && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-[#ff9f30] text-[#0b1623] text-[9px] font-extrabold tracking-widest px-3 py-1 border border-[#ff9f30] shadow-lg animate-bounce-short uppercase">
+              {swipeToast}
+            </div>
+          )}
+
+          <div 
+            key={activeTab} 
+            className={
+              slideAnim === 'left' 
+                ? 'animate-slide-left' 
+                : slideAnim === 'right' 
+                ? 'animate-slide-right' 
+                : 'animate-fade-slide-up'
+            }
+          >
             {renderActiveTab()}
           </div>
         </main>
 
-        {/* Mobile bottom nav bar */}
+        {/* Mobile bottom / Landscape left side nav bar */}
         <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} unreadCount={unreadCount} />
 
         {/* Console Drawer (Logs / Backup settings) */}

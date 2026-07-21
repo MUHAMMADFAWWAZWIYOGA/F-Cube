@@ -20,7 +20,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   ];
 
   return (
-    <nav className="absolute bottom-0 left-0 right-0 cyber-nav-dock z-40 flex justify-around items-center h-20 px-2 select-none border-t-2 border-[#ff9f30]">
+    <nav className="fixed md:absolute bottom-0 left-0 right-0 cyber-nav-dock cyber-nav-dock-responsive z-40 flex justify-around items-center h-20 px-2 select-none transition-all duration-300">
       {/* Background Cyber Scanline line */}
       <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#ff9f30] to-transparent animate-pulse" />
 
@@ -32,16 +32,16 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             key={item.id}
             type="button"
             onClick={() => setActiveTab(item.id)}
-            className={`flex flex-col items-center justify-center flex-1 h-full py-1.5 transition-all duration-200 relative group ${
+            className={`flex flex-col items-center justify-center flex-1 h-full py-1.5 transition-all duration-200 relative group cursor-pointer ${
               isActive 
                 ? 'text-[#ff9f30]' 
                 : 'text-[#8b9bb4] hover:text-[#f0f0f0]'
             }`}
           >
-            {/* Active Indicator Top Glow Line & Dot */}
+            {/* Active Indicator Top Glow Line & Dot (Responsive for Portrait & Landscape) */}
             {isActive && (
               <>
-                <div className="absolute -top-[2px] w-12 h-[3px] bg-[#ff9f30] shadow-[0_0_12px_#ff9f30]" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-12 h-[3px] bg-[#ff9f30] shadow-[0_0_12px_#ff9f30] @media-landscape:top-1/2 @media-landscape:right-0 @media-landscape:left-auto @media-landscape:w-[3px] @media-landscape:h-10" />
                 <div className="absolute top-1 right-2 w-1.5 h-1.5 bg-[#00ff9d] rounded-full animate-ping" />
               </>
             )}

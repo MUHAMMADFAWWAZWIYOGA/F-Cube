@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import { Plus, Trash2, ChevronLeft, ChevronRight, Calendar, Clock, BookOpen } from 'lucide-react';
+import { Plus, Trash2, ChevronLeft, ChevronRight, Calendar, Clock, Sparkles, BookOpen } from 'lucide-react';
 import { ConfirmModal } from './ConfirmModal';
 
 export interface CalendarActivity {
@@ -32,11 +32,44 @@ export const CalendarTracker: React.FC<CalendarTrackerProps> = ({ pin }) => {
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isDraggingTouch, setIsDraggingTouch] = useState(false);
+
+  // Grid container reference for finger drag tracking
+  const gridRef = useRef<HTMLDivElement>(null);
 
   // New activity form states
   const [newTitle, setNewTitle] = useState('');
   const [newTime, setNewTime] = useState('12:00');
   const [newDescription, setNewDescription] = useState('');
+
+  // Handle touch/pointer drag over calendar cells
+  const handlePointerDrag = (clientX: number, clientY: number) => {
+    const el = document.elementFromPoint(clientX, clientY);
+    if (!el) return;
+    const dateAttr = el.getAttribute('data-date-str') || el.closest('[data-date-str]')?.getAttribute('data-date-str');
+    if (dateAttr) {
+      const [y, m, d] = dateAttr.split('-').map(Number);
+      const targetDate = new Date(y, m - 1, d);
+      if (formatDateLocal(targetDate) !== formatDateLocal(selectedDate)) {
+        setSelectedDate(targetDate);
+        if ('vibrate' in navigator) {
+          try { navigator.vibrate(8); } catch (_) {}
+        }
+      }
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setIsDraggingTouch(true);
+    const touch = e.touches[0];
+    if (touch) {
+      handlePointerDrag(touch.clientX, touch.clientY);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsDraggingTouch(false);
+  };
 
   const currentYear = currentDate.getFullYear();
   const currentMonth = currentDate.getMonth();
@@ -221,8 +254,15 @@ export const CalendarTracker: React.FC<CalendarTrackerProps> = ({ pin }) => {
           </h2>
           <p className="text-[#8b9bb4] text-[9px] mt-0.5 uppercase">Daily Event Planner & Monitor</p>
         </div>
-        <div className="bg-[#1c2b3a] text-[#ff9f30] px-2 py-1 font-bold text-[9px] border border-[#1c2b3a]">
-          M.COMPL // {monthlyCompletionRate}%
+        <div className="flex items-center gap-2">
+          {isDraggingTouch && (
+            <span className="bg-[#ff9f30] text-[#0b1623] px-2 py-0.5 font-extrabold text-[8px] tracking-wider animate-bounce-short uppercase">
+              FINGER SLIDING
+            </span>
+          )}
+          <div className="bg-[#1c2b3a] text-[#ff9f30] px-2 py-1 font-bold text-[9px] border border-[#1c2b3a]">
+            M.COMPL // {monthlyCompletionRate}%
+          </div>
         </div>
       </div>
 
@@ -263,8 +303,13 @@ export const CalendarTracker: React.FC<CalendarTrackerProps> = ({ pin }) => {
           ))}
         </div>
 
-        {/* Calendar Days Matrix */}
-        <div className="grid grid-cols-7 gap-1">
+        {/* Calendar Days Matrix with Interactive Touch/Finger Drag Navigation */}
+        <div 
+          ref={gridRef}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          className="grid grid-cols-7 gap-1 touch-none"
+        >
           {calendarCells.map((cell, idx) => {
             const hasEvents = (activitiesByDate[cell.dateStr] || []).length > 0;
             const isToday = formatDateLocal(new Date()) === cell.dateStr;
@@ -274,22 +319,23 @@ export const CalendarTracker: React.FC<CalendarTrackerProps> = ({ pin }) => {
               <button
                 key={idx}
                 type="button"
+                data-date-str={cell.dateStr}
                 onClick={() => {
                   setSelectedDate(cell.date);
                   setShowAddForm(false);
                 }}
-                className={`h-11 border flex flex-col items-center justify-between p-1.5 transition-all text-left relative group cursor-pointer ${
+                className={`h-11 border flex flex-col items-center justify-between p-1.5 transition-all text-left relative group cursor-pointer select-none ${
                   cell.isCurrentMonth 
                     ? 'bg-transparent text-[#f0f0f0] border-[#1c2b3a]' 
                     : 'bg-[#1c2b3a]/10 text-[#8b9bb4]/40 border-[#1c2b3a]/30'
                 } ${
                   isSelected 
-                    ? 'border-[#ff9f30] bg-[#ff9f30]/5 text-[#ff9f30]' 
+                    ? 'border-[#ff9f30] bg-[#ff9f30]/15 text-[#ff9f30] scale-105 shadow-[0_0_12px_rgba(255,159,48,0.35)] z-10 animate-icon-pop' 
                     : 'hover:border-[#ff9f30]/70'
                 }`}
               >
                 {/* Day number */}
-                <div className="flex justify-between items-start w-full">
+                <div className="flex justify-between items-start w-full pointer-events-none">
                   <span className={`text-[9px] font-bold leading-none ${isToday && cell.isCurrentMonth ? 'text-[#00ff9d]' : ''}`}>
                     {cell.dayNum}
                   </span>
@@ -302,7 +348,7 @@ export const CalendarTracker: React.FC<CalendarTrackerProps> = ({ pin }) => {
 
                 {/* Event indicator dot */}
                 {hasEvents && (
-                  <span className={`w-1.5 h-1.5 ${isSelected ? 'bg-[#ff9f30]' : 'bg-[#ff9f30]/60 animate-pulse'}`} />
+                  <span className={`w-1.5 h-1.5 pointer-events-none ${isSelected ? 'bg-[#ff9f30] scale-125' : 'bg-[#ff9f30]/60 animate-pulse'}`} />
                 )}
               </button>
             );
@@ -310,10 +356,13 @@ export const CalendarTracker: React.FC<CalendarTrackerProps> = ({ pin }) => {
         </div>
       </div>
 
-      {/* Selected Day View Details */}
-      <div className="app-card p-4 space-y-4">
+      {/* Selected Day View Details with Instant Motion Updates */}
+      <div key={selectedDateStr} className="app-card p-4 space-y-4 animate-fade-slide-up">
         <div className="flex justify-between items-center border-b border-[#1c2b3a] pb-2 text-[9px] font-bold text-[#8b9bb4]">
-          <span>// DAY_SCHEDULE: {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}</span>
+          <span className="flex items-center gap-1.5 text-[#f0f0f0]">
+            <Sparkles className="w-3 h-3 text-[#ff9f30] animate-spin [animation-duration:8s]" />
+            // DAY_SCHEDULE: {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
+          </span>
           <button
             type="button"
             onClick={() => setShowAddForm(!showAddForm)}
