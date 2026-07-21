@@ -59,18 +59,20 @@
 .app-card {
   background: #0b1623;
   border: 1px solid #1c2b3a;
-  @apply transition-colors duration-150;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .app-card:hover {
   border-color: #ff9f30;
+  box-shadow: 0 4px 20px rgba(255, 159, 48, 0.12);
+  transform: translateY(-1px);
 }
 
 .gradient-text {
   color: #f0f0f0;
 }
 
-/* Slide in drawer keyframes */
+/* Animations & Keyframes */
 @keyframes slideInRight {
   from {
     transform: translateX(100%);
@@ -80,8 +82,72 @@
   }
 }
 
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes iconPop {
+  0% {
+    transform: scale(0.85);
+  }
+  50% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes neonGlowPulse {
+  0%, 100% {
+    box-shadow: 0 -4px 20px rgba(255, 159, 48, 0.25), inset 0 1px 0 rgba(255, 159, 48, 0.4);
+    border-color: rgba(255, 159, 48, 0.8);
+  }
+  50% {
+    box-shadow: 0 -4px 35px rgba(255, 159, 48, 0.45), inset 0 1px 0 rgba(0, 255, 157, 0.4);
+    border-color: rgba(0, 255, 157, 0.8);
+  }
+}
+
+@keyframes shimmerProgress {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 .animate-slide-in-right {
   animation: slideInRight 0.2s ease-out forwards;
+}
+
+.animate-fade-slide-up {
+  animation: fadeSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-icon-pop {
+  animation: iconPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.cyber-nav-dock {
+  background: linear-gradient(180deg, rgba(15, 28, 44, 0.98) 0%, rgba(11, 22, 35, 0.99) 100%);
+  border-top: 2px solid #ff9f30;
+  box-shadow: 0 -6px 30px rgba(255, 159, 48, 0.25), inset 0 1px 0 rgba(255, 159, 48, 0.5);
+  backdrop-filter: blur(12px);
+}
+
+.shimmer-bar {
+  background: linear-gradient(90deg, #00ff9d 0%, #38ef7d 40%, #ffffff 50%, #38ef7d 60%, #00ff9d 100%);
+  background-size: 200% 100%;
+  animation: shimmerProgress 3s infinite linear;
 }
 
 /* Custom mock hand-held phone device style */

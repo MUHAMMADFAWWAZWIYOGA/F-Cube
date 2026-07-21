@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import type { Habit } from './HabitTracker';
 import type { DocumentNote } from './DocumentManager';
@@ -11,8 +11,20 @@ import {
   ArrowRight,
   Award,
   ShieldAlert,
-  AlertTriangle
+  AlertTriangle,
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
+
+const DASHBOARD_QUOTES = [
+  { text: "Disiplin adalah jembatan antara tujuan dan pencapaian.", author: "Jim Rohn" },
+  { text: "Tindakan adalah kunci dasar untuk semua kesuksesan.", author: "Pablo Picasso" },
+  { text: "Jangan habiskan waktu memukul dinding, berharap mengubahnya menjadi pintu.", author: "Coco Chanel" },
+  { text: "Cara terbaik untuk memprediksi masa depan adalah dengan menciptakannya.", author: "Peter Drucker" },
+  { text: "Fokus pada prosesnya, bukan hanya pada hasil akhirnya.", author: "F'Cube Monitor" },
+  { text: "Kecerdasan tanpa ambisi bagaikan burung tanpa sayap.", author: "Salvador Dali" },
+  { text: "Kemajuan hari demi hari yang sedikit demi sedikit akan menghasilkan hasil yang luar biasa.", author: "Robin Sharma" }
+];
 
 interface DashboardProps {
   setActiveTab: (tab: string) => void;
@@ -141,6 +153,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, pin }) => {
     return Object.entries(breakdown).sort((a, b) => b[1] - a[1]);
   }, [needs]);
 
+  const [quoteIdx, setQuoteIdx] = useState<number>(() => Math.floor(Math.random() * DASHBOARD_QUOTES.length));
+
+  const handleNextQuote = () => {
+    setQuoteIdx((prev) => (prev + 1) % DASHBOARD_QUOTES.length);
+  };
+
+  const currentQuote = DASHBOARD_QUOTES[quoteIdx];
+
   const dateFormatted = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'short',
@@ -150,14 +170,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, pin }) => {
   return (
     <div className="space-y-5">
       {/* Terminal Title Bar */}
-      <div className="border border-[#1c2b3a] bg-[#0b1623] p-4 relative">
+      <div className="border border-[#1c2b3a] bg-[#0b1623] p-4 relative shadow-lg">
         <div className="flex flex-col gap-1">
           <div className="flex justify-between items-center text-[9px] font-bold text-[#8b9bb4]">
             <span>// UNIT: CORE_STATISTICS</span>
             <span>{dateFormatted}</span>
           </div>
-          <h2 className="text-base font-bold text-[#f0f0f0] tracking-wider mt-1">
-            TERMINAL STATUS: <span className="text-[#00ff9d]">ONLINE</span>
+          <h2 className="text-base font-bold text-[#f0f0f0] tracking-wider mt-1 flex items-center justify-between">
+            <span>TERMINAL STATUS: <span className="text-[#00ff9d] animate-pulse">ONLINE</span></span>
+            <span className="text-[9px] font-mono text-[#ff9f30] bg-[#ff9f30]/10 px-2 py-0.5 border border-[#ff9f30]/30">
+              OPERATOR LVL.{Math.max(1, Math.floor(consistencyIndex / 20))}
+            </span>
           </h2>
           <p className="text-[#8b9bb4] text-[10px] leading-relaxed mt-1 flex flex-wrap items-center gap-1.5">
             <span>Data secured on device.</span>
@@ -166,6 +189,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, pin }) => {
             </span>
           </p>
         </div>
+      </div>
+
+      {/* Motivational Mindset Card */}
+      <div className="border border-[#1c2b3a] bg-[#1c2b3a]/15 p-3.5 relative overflow-hidden group hover:border-[#ff9f30]/50 transition-all">
+        <div className="flex justify-between items-center border-b border-[#1c2b3a] pb-2 mb-2 text-[9px] font-bold text-[#8b9bb4]">
+          <span className="flex items-center gap-1 text-[#ff9f30]">
+            <Sparkles className="w-3 h-3 text-[#ff9f30] animate-spin [animation-duration:8s]" />
+            // DAILY MOTIVATION & INSPIRATION
+          </span>
+          <button
+            onClick={handleNextQuote}
+            className="flex items-center gap-1 text-[8px] text-[#8b9bb4] hover:text-[#ff9f30] transition-colors px-1.5 py-0.5 border border-[#1c2b3a] bg-[#0b1623]"
+            title="Ganti Motivasi"
+          >
+            <RefreshCw className="w-2.5 h-2.5" />
+            <span>REROLL</span>
+          </button>
+        </div>
+        <p className="text-xs italic text-[#f0f0f0] leading-relaxed select-none">
+          "{currentQuote.text}"
+        </p>
+        <p className="text-[8px] font-bold text-[#ff9f30] tracking-widest uppercase text-right mt-1.5">
+          — {currentQuote.author}
+        </p>
       </div>
 
       {/* Grid Dashboard Widgets */}
@@ -181,7 +228,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, pin }) => {
           </div>
           <div className="w-full bg-[#1c2b3a] h-1.5 overflow-hidden">
             <div 
-              className="bg-[#00ff9d] h-full transition-all duration-300" 
+              className="shimmer-bar h-full transition-all duration-300" 
               style={{ width: `${habitStats.goodCompletionPercent}%` }} 
             />
           </div>
@@ -202,7 +249,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, pin }) => {
           </div>
           <div className="w-full bg-[#1c2b3a] h-1.5 overflow-hidden">
             <div 
-              className={`h-full transition-all duration-300 ${habitStats.lapsedBad > 0 ? 'bg-[#ff9f30]' : 'bg-[#00ff9d]'}`} 
+              className={`h-full transition-all duration-300 ${habitStats.lapsedBad > 0 ? 'bg-[#ff9f30]' : 'shimmer-bar'}`} 
               style={{ width: `${habitStats.badAvoidedPercent}%` }} 
             />
           </div>
@@ -352,7 +399,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ setActiveTab, pin }) => {
             </div>
             <div className="w-full bg-[#1c2b3a] h-2 overflow-hidden">
               <div 
-                className="bg-[#00ff9d] h-full transition-all duration-300" 
+                className="shimmer-bar h-full transition-all duration-300" 
                 style={{ width: `${consistencyIndex}%` }} 
               />
             </div>

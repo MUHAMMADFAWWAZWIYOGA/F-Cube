@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Plus, Trash2, Check, X, Flame, Sparkles, Bell, Clock } from 'lucide-react';
+import { ConfirmModal } from './ConfirmModal';
 import type { ReminderItem } from '../App';
 
 export interface Habit {
@@ -27,6 +28,9 @@ interface HabitTrackerProps {
 export const HabitTracker: React.FC<HabitTrackerProps> = ({ pin }) => {
   const [habits, setHabits] = useLocalStorage<Habit[]>('my-monitor-habits', [], pin);
   const [reminders, setReminders] = useLocalStorage<ReminderItem[]>('my-monitor-reminders', [], pin);
+
+  // Deletion modal state
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Creation states
   const [name, setName] = useState('');
@@ -96,10 +100,14 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({ pin }) => {
   };
 
   const handleDeleteHabit = (id: string) => {
-    if (confirm('Are you sure you want to delete this habit? All history and reminders will be erased.')) {
-      setHabits(habits.filter(h => h.id !== id));
-      setReminders(reminders.filter(r => r.habitId !== id));
-    }
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDeleteHabit = () => {
+    if (!deleteConfirmId) return;
+    setHabits(habits.filter(h => h.id !== deleteConfirmId));
+    setReminders(reminders.filter(r => r.habitId !== deleteConfirmId));
+    setDeleteConfirmId(null);
   };
 
   const toggleDay = (habitId: string, dateStr: string) => {
@@ -611,6 +619,14 @@ export const HabitTracker: React.FC<HabitTrackerProps> = ({ pin }) => {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={!!deleteConfirmId}
+        title="HAPUS KEBIASAAN // DELETE HABIT"
+        message="Apakah Anda yakin ingin menghapus kebiasaan ini? Semua riwayat pelacakan dan jadwal pengingat terkait akan dihapus secara permanen dari sistem."
+        onConfirm={confirmDeleteHabit}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
     </div>
   );
 };

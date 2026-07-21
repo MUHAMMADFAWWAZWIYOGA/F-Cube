@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Search, Plus, Trash2, Tag, BookOpen, Edit, Eye, FileText, ChevronRight, ArrowLeft } from 'lucide-react';
+import { ConfirmModal } from './ConfirmModal';
 
 export interface DocumentNote {
   id: string;
@@ -108,6 +109,7 @@ interface DocumentManagerProps {
 export const DocumentManager: React.FC<DocumentManagerProps> = ({ pin }) => {
   const [notes, setNotes] = useLocalStorage<DocumentNote[]>('my-monitor-notes', [], pin);
   const [activeNoteId, setActiveNoteId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -211,15 +213,19 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({ pin }) => {
   };
 
   const handleDeleteNote = (id: string) => {
-    if (confirm('Are you sure you want to delete this document?')) {
-      setNotes(notes.filter(n => n.id !== id));
-      if (activeNoteId === id) {
-        setActiveNoteId(null);
-        setEditTitle('');
-        setEditContent('');
-        setEditTags('');
-      }
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDeleteNote = () => {
+    if (!deleteConfirmId) return;
+    setNotes(notes.filter(n => n.id !== deleteConfirmId));
+    if (activeNoteId === deleteConfirmId) {
+      setActiveNoteId(null);
+      setEditTitle('');
+      setEditContent('');
+      setEditTags('');
     }
+    setDeleteConfirmId(null);
   };
 
   const renderedPreview = useMemo(() => {
@@ -444,6 +450,14 @@ export const DocumentManager: React.FC<DocumentManagerProps> = ({ pin }) => {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteConfirmId}
+        title="HAPUS DOKUMEN // DELETE NOTE"
+        message="Apakah Anda yakin ingin menghapus dokumen catatan ini dari memori tersimpan?"
+        onConfirm={confirmDeleteNote}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
     </div>
   );
 };

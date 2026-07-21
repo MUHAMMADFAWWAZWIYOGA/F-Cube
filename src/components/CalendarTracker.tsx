@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Plus, Trash2, ChevronLeft, ChevronRight, Calendar, Clock, BookOpen } from 'lucide-react';
+import { ConfirmModal } from './ConfirmModal';
 
 export interface CalendarActivity {
   id: string;
@@ -25,6 +26,7 @@ const formatDateLocal = (date: Date) => {
 export const CalendarTracker: React.FC<CalendarTrackerProps> = ({ pin }) => {
   // Sync calendar activities with local storage (encrypted using user pin)
   const [activities, setActivities] = useLocalStorage<CalendarActivity[]>('my-monitor-calendar', [], pin);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Calendar View Date states
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
@@ -177,9 +179,13 @@ export const CalendarTracker: React.FC<CalendarTrackerProps> = ({ pin }) => {
 
   // Delete activity handler
   const handleDeleteActivity = (id: string) => {
-    if (confirm('Delete this scheduled activity?')) {
-      setActivities(activities.filter(act => act.id !== id));
-    }
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDeleteActivity = () => {
+    if (!deleteConfirmId) return;
+    setActivities(activities.filter(act => act.id !== deleteConfirmId));
+    setDeleteConfirmId(null);
   };
 
   // Toggle activity completion state
@@ -450,6 +456,14 @@ export const CalendarTracker: React.FC<CalendarTrackerProps> = ({ pin }) => {
           </div>
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={!!deleteConfirmId}
+        title="HAPUS KEGIATAN // DELETE ACTIVITY"
+        message="Apakah Anda yakin ingin menghapus agenda kegiatan ini dari kalender?"
+        onConfirm={confirmDeleteActivity}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
     </div>
   );
 };

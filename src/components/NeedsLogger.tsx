@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { Plus, Trash2, Link, ShoppingBag, ArrowUpDown, HelpCircle, CheckCircle, Eye } from 'lucide-react';
+import { ConfirmModal } from './ConfirmModal';
 
 export interface NeedItem {
   id: string;
@@ -21,6 +22,7 @@ interface NeedsLoggerProps {
 
 export const NeedsLogger: React.FC<NeedsLoggerProps> = ({ pin }) => {
   const [items, setItems] = useLocalStorage<NeedItem[]>('my-monitor-needs', [], pin);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Form states
   const [showAddForm, setShowAddForm] = useState(false);
@@ -73,9 +75,13 @@ export const NeedsLogger: React.FC<NeedsLoggerProps> = ({ pin }) => {
   };
 
   const handleDeleteItem = (id: string) => {
-    if (confirm('Are you sure you want to delete this resource log?')) {
-      setItems(items.filter(item => item.id !== id));
-    }
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDeleteItem = () => {
+    if (!deleteConfirmId) return;
+    setItems(items.filter(item => item.id !== deleteConfirmId));
+    setDeleteConfirmId(null);
   };
 
   const cycleStatus = (id: string) => {
@@ -492,6 +498,14 @@ export const NeedsLogger: React.FC<NeedsLoggerProps> = ({ pin }) => {
           })}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteConfirmId}
+        title="HAPUS INVENTARIS // DELETE ITEM"
+        message="Apakah Anda yakin ingin menghapus item inventaris kebutuhan ini?"
+        onConfirm={confirmDeleteItem}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
     </div>
   );
 };

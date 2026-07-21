@@ -6,6 +6,7 @@ import { HabitTracker } from './components/HabitTracker';
 import { DocumentManager } from './components/DocumentManager';
 import { NeedsLogger } from './components/NeedsLogger';
 import { CalendarTracker } from './components/CalendarTracker';
+import { ConfirmModal } from './components/ConfirmModal';
 import { generatePinHash } from './utils/crypto';
 import { Bell, X, Lock, Download, Upload, Shield, RefreshCw } from 'lucide-react';
 
@@ -63,7 +64,11 @@ function App() {
   const [loadingMessage, setLoadingMessage] = useState<string>('');
   const [currentQuote, setCurrentQuote] = useState<{ text: string; author: string }>({ text: '', author: '' });
 
-  // Loading Screen Hook
+  // Confirmation Modal States
+  const [showResetConfirm, setShowResetConfirm] = useState<boolean>(false);
+  const [showClearLogsConfirm, setShowClearLogsConfirm] = useState<boolean>(false);
+
+  // Loading Screen Hook with extended duration for enhanced readability
   useEffect(() => {
     if (!isLoading) return;
 
@@ -71,18 +76,28 @@ function App() {
     setCurrentQuote(rand);
     setLoadingProgress(0);
 
-    const duration = 2000; // 2 seconds
-    const step = 25; // 25ms tick rate
+    const duration = 4800; // Extended to 4.8 seconds for easy reading of quotes & logs
+    const step = 30; // 30ms tick rate
     const increment = (100 / (duration / step));
+
+    let quoteSwitched = false;
 
     const timer = setInterval(() => {
       setLoadingProgress(prev => {
         const next = prev + increment;
+
+        // Switch to a second inspiring quote halfway through boot if progress passes 50%
+        if (next >= 50 && !quoteSwitched) {
+          quoteSwitched = true;
+          const secondQuote = MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)];
+          setCurrentQuote(secondQuote);
+        }
+
         if (next >= 100) {
           clearInterval(timer);
           setTimeout(() => {
             setIsLoading(false);
-          }, 300);
+          }, 400);
           return 100;
         }
         return next;
@@ -340,12 +355,10 @@ function App() {
 
   // Reset all local storage partitions and reboot
   const handleSystemReset = () => {
-    const confirm1 = window.confirm("WARNING: You are about to format the F'Cube database.\n\nThis will permanently delete all your habits, notes, calendar activities, inventory settings, and reminders.\n\nAre you sure you want to proceed?");
-    if (!confirm1) return;
+    setShowResetConfirm(true);
+  };
 
-    const confirm2 = window.confirm("FINAL WARNING: This is irreversible. All decrypted partitions will be wiped out.\n\nPress OK to reset and reboot.");
-    if (!confirm2) return;
-
+  const confirmExecuteReset = () => {
     localStorage.removeItem('my-monitor-pin-hash');
     localStorage.removeItem('my-monitor-habits');
     localStorage.removeItem('my-monitor-notes');
@@ -353,8 +366,6 @@ function App() {
     localStorage.removeItem('my-monitor-reminders');
     localStorage.removeItem('my-monitor-notifications');
     localStorage.removeItem('my-monitor-calendar');
-
-    alert("SYSTEM RESTORE COMPLETED // REBOOTING...");
     window.location.reload();
   };
 
@@ -410,7 +421,12 @@ function App() {
   };
 
   const handleClearNotifications = () => {
+    setShowClearLogsConfirm(true);
+  };
+
+  const confirmClearNotifications = () => {
     setNotifications([]);
+    setShowClearLogsConfirm(false);
   };
 
   const handleMarkAllRead = () => {
@@ -473,7 +489,7 @@ function App() {
             </div>
 
             {/* Motivational Quote with smooth styling */}
-            <div className="border border-[#1c2b3a] bg-[#1c2b3a]/10 p-4 w-full space-y-2 mt-4 select-none relative">
+            <div className="border border-[#1c2b3a] bg-[#1c2b3a]/10 p-4 w-full space-y-2 mt-4 select-none relative transition-all duration-300">
               <span className="absolute -top-2 left-3 bg-[#0b1623] px-2 text-[7px] font-bold text-[#8b9bb4] tracking-wider border border-[#1c2b3a]">
                 SYS.INSPIRATION
               </span>
@@ -484,6 +500,14 @@ function App() {
                 — {currentQuote.author}
               </p>
             </div>
+
+            {/* Skip button for quick entry */}
+            <button
+              onClick={() => setIsLoading(false)}
+              className="text-[9px] font-bold text-[#8b9bb4] hover:text-[#ff9f30] tracking-wider uppercase border border-[#1c2b3a] px-3 py-1 bg-[#1c2b3a]/30 hover:bg-[#1c2b3a] transition-all cursor-pointer mt-2"
+            >
+              [ MASUK KE TERMINAL // SKIP BOOT ]
+            </button>
           </div>
 
           <div className="text-center text-[7px] text-[#8b9bb4] uppercase tracking-wider">
@@ -635,12 +659,14 @@ function App() {
         </header>
 
         {/* Content View Workspace */}
-        <main className="flex-1 overflow-y-auto p-4 pb-20">
-          {renderActiveTab()}
+        <main className="flex-1 overflow-y-auto p-4 pb-24 relative">
+          <div key={activeTab} className="animate-fade-slide-up">
+            {renderActiveTab()}
+          </div>
         </main>
 
         {/* Mobile bottom nav bar */}
-        <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} />
+        <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} unreadCount={unreadCount} />
 
         {/* Console Drawer (Logs / Backup settings) */}
         {showDrawer && (
@@ -795,6 +821,28 @@ function App() {
           </div>
         )}
       </div>
+
+      {/* Confirm modal for System Reset */}
+      <ConfirmModal
+        isOpen={showResetConfirm}
+        title="FORMAT DATABASE // SYSTEM RESET"
+        message="PERINGATAN UTAMA: Anda akan melakukan format ulang database F'Cube. Semua kebiasaan, catatan dokumen, jadwal kalender, inventaris, dan pengingat akan dihapus secara permanen. Lanjutkan?"
+        variant="danger"
+        confirmText="FORMAT & REBOOT"
+        onConfirm={confirmExecuteReset}
+        onCancel={() => setShowResetConfirm(false)}
+      />
+
+      {/* Confirm modal for Clearing System Logs */}
+      <ConfirmModal
+        isOpen={showClearLogsConfirm}
+        title="HAPUS LOG SISTEM // CLEAR LOGS"
+        message="Apakah Anda yakin ingin menghapus seluruh riwayat log notifikasi sistem?"
+        variant="warning"
+        confirmText="HAPUS LOG"
+        onConfirm={confirmClearNotifications}
+        onCancel={() => setShowClearLogsConfirm(false)}
+      />
     </div>
   );
 }
