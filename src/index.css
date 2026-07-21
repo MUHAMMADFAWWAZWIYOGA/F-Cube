@@ -25,14 +25,18 @@
 }
 
 @layer base {
+  html, body, #root {
+    background-color: #0b1623 !important;
+    color: #f0f0f0;
+  }
+
   body {
-    background-color: #0b1623;
     /* Drafting grid background lines - soft dark aesthetic */
     background-image: 
       linear-gradient(to right, rgba(28, 43, 58, 0.35) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(28, 43, 58, 0.35) 1px, transparent 1px);
     background-size: 24px 24px;
-    @apply text-[#f0f0f0] font-sans antialiased selection:bg-accent/30 selection:text-white overflow-x-hidden;
+    @apply font-sans antialiased selection:bg-accent/30 selection:text-white overflow-x-hidden;
   }
 
   /* Completely hide all scrollbars globally - no jarring side indicators anywhere */
@@ -52,6 +56,17 @@
     display: none !important;
     background: transparent !important;
     border: none !important;
+  }
+
+  /* Eliminate browser autofill white background flashes */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover, 
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0px 1000px #0b1623 inset !important;
+    -webkit-text-fill-color: #f0f0f0 !important;
+    transition: background-color 5000s ease-in-out 0s;
   }
 }
 
@@ -104,22 +119,22 @@
 @keyframes slideLeft {
   from {
     opacity: 0;
-    transform: translateX(25px);
+    transform: translateX(30px) scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateX(0) scale(1);
   }
 }
 
 @keyframes slideRight {
   from {
     opacity: 0;
-    transform: translateX(-25px);
+    transform: translateX(-30px) scale(0.97);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateX(0) scale(1);
   }
 }
 
@@ -176,11 +191,11 @@
 }
 
 .animate-slide-left {
-  animation: slideLeft 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-slide-right {
-  animation: slideRight 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideRight 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .animate-icon-pop {
@@ -228,6 +243,35 @@
     padding-left: 5.5rem !important;
     padding-bottom: 1.5rem !important;
   }
+}
+
+/* Manual Landscape Mode Override & CSS Rules */
+.force-landscape {
+  flex-direction: row !important;
+}
+
+.force-landscape .cyber-nav-dock-responsive,
+.force-landscape .cyber-nav-dock {
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: auto !important;
+  width: 4.5rem !important;
+  height: 100% !important;
+  flex-direction: column !important;
+  border-top: 0 !important;
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+  border-right: 2px solid #ff9f30 !important;
+  box-shadow: 6px 0 25px rgba(255, 159, 48, 0.2), inset 1px 0 0 rgba(255, 159, 48, 0.4) !important;
+  justify-content: center !important;
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+}
+
+.force-landscape .app-workspace-landscape {
+  padding-left: 5.5rem !important;
+  padding-bottom: 1.5rem !important;
 }
 
 .shimmer-bar {

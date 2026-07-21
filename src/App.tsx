@@ -8,7 +8,7 @@ import { NeedsLogger } from './components/NeedsLogger';
 import { CalendarTracker } from './components/CalendarTracker';
 import { ConfirmModal } from './components/ConfirmModal';
 import { generatePinHash } from './utils/crypto';
-import { Bell, X, Lock, Download, Upload, Shield, RefreshCw, Sparkles } from 'lucide-react';
+import { Bell, X, Lock, Download, Upload, Shield, RefreshCw, Sparkles, Monitor } from 'lucide-react';
 
 const LOADING_LOGS = [
   "DECRYPTING DATABASE CORRIDORS...",
@@ -123,6 +123,9 @@ function App() {
   const [tempNewPin, setTempNewPin] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
+  // Manual Landscape Mode Toggle State
+  const [isForceLandscape, setIsForceLandscape] = useState<boolean>(false);
+
   // Active Tab View State
   const [activeTab, setActiveTab] = useState<string>('dashboard');
 
@@ -151,10 +154,24 @@ function App() {
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!touchStart) return;
-    setTouchEnd({
-      x: e.targetTouches[0].clientX,
-      y: e.targetTouches[0].clientY
-    });
+    const currentX = e.targetTouches[0].clientX;
+    const currentY = e.targetTouches[0].clientY;
+    setTouchEnd({ x: currentX, y: currentY });
+
+    const distanceX = touchStart.x - currentX;
+    const distanceY = touchStart.y - currentY;
+    const isHorizontal = Math.abs(distanceX) > Math.abs(distanceY) * 1.2;
+
+    if (isHorizontal) {
+      const currentIndex = TABS.indexOf(activeTab);
+      if (distanceX > 25) {
+        const nextTab = TABS[(currentIndex + 1) % TABS.length];
+        setSwipeToast(`PREVIEW NEXT >> ${nextTab.toUpperCase()}`);
+      } else if (distanceX < -25) {
+        const prevTab = TABS[(currentIndex - 1 + TABS.length) % TABS.length];
+        setSwipeToast(`<< PREVIEW PREV ${prevTab.toUpperCase()}`);
+      }
+    }
   };
 
   const handleTouchEnd = () => {
@@ -698,7 +715,7 @@ function App() {
   // 2. Render App Shell if unlocked
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-transparent py-0 md:py-6 px-0 md:px-4">
-      <div className="w-full max-w-md sm:max-w-xl md:max-w-4xl lg:max-w-6xl h-screen md:h-[90vh] md:max-h-[920px] bg-[#0b1623] text-[#f0f0f0] flex flex-col relative overflow-hidden md:border-2 md:border-[#1c2b3a] md:shadow-2xl md:rounded-3xl transition-all duration-300">
+      <div className={`w-full max-w-md sm:max-w-xl md:max-w-4xl lg:max-w-6xl h-screen md:h-[90vh] md:max-h-[920px] bg-[#0b1623] text-[#f0f0f0] flex flex-col relative overflow-hidden md:border-2 md:border-[#1c2b3a] md:shadow-2xl md:rounded-3xl transition-all duration-300 ${isForceLandscape ? 'force-landscape' : ''}`}>
         
         {/* Top Header Bar */}
         <header className="bg-[#0b1623] border-b border-[#1c2b3a] px-5 py-3.5 flex items-center justify-between shrink-0 z-10">
@@ -709,7 +726,7 @@ function App() {
             <div className="w-1.5 h-1.5 bg-[#00ff9d] animate-pulse rounded-full" />
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2.5">
             {/* Clock Widget */}
             <div className="text-[9px] text-[#8b9bb4] font-bold bg-[#1c2b3a] px-2.5 py-1 rounded-lg">
               {timeStr || 'SYS.CLOCK'}
@@ -723,6 +740,19 @@ function App() {
             >
               <Lock className="w-3 h-3 text-[#ff9f30]" />
               <span>LOCK</span>
+            </button>
+
+            {/* Manual Landscape Mode Toggle Button */}
+            <button
+              onClick={() => setIsForceLandscape(!isForceLandscape)}
+              className={`p-1.5 transition-all relative cursor-pointer rounded-full active:scale-95 ${
+                isForceLandscape 
+                  ? 'bg-[#ff9f30] text-[#0b1623] font-bold border border-[#ff9f30] shadow-[0_0_10px_rgba(255,159,48,0.5)]' 
+                  : 'text-[#8b9bb4] hover:text-[#ff9f30] hover:bg-[#1c2b3a]/40 border border-transparent'
+              }`}
+              title="Toggle Manual Landscape Dock Mode"
+            >
+              <Monitor className="w-4 h-4" />
             </button>
 
             {/* Notification Bell */}
@@ -788,7 +818,7 @@ function App() {
         </main>
 
         {/* Mobile bottom / Landscape left side nav bar */}
-        <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} unreadCount={unreadCount} />
+        <BottomNav activeTab={activeTab} setActiveTab={setActiveTab} unreadCount={unreadCount} addSystemLog={addSystemLog} />
 
         {/* Console Drawer (Logs / Backup settings) */}
         {showDrawer && (
